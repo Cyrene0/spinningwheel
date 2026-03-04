@@ -276,6 +276,7 @@ class Wheel {
     const center = radius;
     const sliceCount = Math.max(entries.length, 1);
     const angleStep = TWO_PI / sliceCount;
+    const fontSize = this.getLabelFontSize(entries.length);
 
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -301,9 +302,11 @@ class Wheel {
         ctx.translate(x, y);
         ctx.rotate(mid + Math.PI / 2);
         ctx.fillStyle = getThemeColor("--theme-text", "#5f1642");
-        ctx.font = "bold 15px Segoe UI, sans-serif";
+        ctx.font = `bold ${fontSize}px Segoe UI, sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText(entries[i].name, 0, 0);
+        const maxLabelWidth = this.getMaxLabelWidth(radius, angleStep);
+        const safeLabel = this.truncateLabelToWidth(entries[i].name, ctx, maxLabelWidth);
+        ctx.fillText(safeLabel, 0, 0);
         ctx.restore();
       }
     }
@@ -321,6 +324,47 @@ class Wheel {
     ctx.strokeStyle = getThemeColor("--theme-center-stroke", getThemeColor("--theme-base", DEFAULT_THEME_BASE));
     ctx.lineWidth = 3;
     ctx.stroke();
+  }
+
+  getLabelFontSize(entryCount) {
+    if (entryCount <= 8) {
+      return 15;
+    }
+    if (entryCount <= 12) {
+      return 14;
+    }
+    if (entryCount <= 16) {
+      return 13;
+    }
+    if (entryCount <= 22) {
+      return 12;
+    }
+    return 11;
+  }
+
+  getMaxLabelWidth(radius, angleStep) {
+    const labelRadius = radius * 0.67;
+    const arcChordWidth = 2 * labelRadius * Math.sin(angleStep / 2);
+    return clamp(arcChordWidth * 0.88, 56, radius * 0.62);
+  }
+
+  truncateLabelToWidth(label, ctx, maxWidth) {
+    if (ctx.measureText(label).width <= maxWidth) {
+      return label;
+    }
+
+    const ellipsis = "…";
+    const ellipsisWidth = ctx.measureText(ellipsis).width;
+    if (ellipsisWidth > maxWidth) {
+      return "";
+    }
+
+    let clipped = label;
+    while (clipped.length > 0 && ctx.measureText(`${clipped}${ellipsis}`).width > maxWidth) {
+      clipped = clipped.slice(0, -1);
+    }
+
+    return `${clipped}${ellipsis}`;
   }
 
   animateTo(finalRotation, entries, durationMs = 3600) {
@@ -804,6 +848,8 @@ function resetPools() {
 function renderResult() {
   elements.maleName.textContent = state.current.male?.name ?? "—";
   elements.femaleName.textContent = state.current.female?.name ?? "—";
+  elements.maleName.title = state.current.male?.name ?? "";
+  elements.femaleName.title = state.current.female?.name ?? "";
 
   if (!state.current.male && !state.current.female) {
     elements.pairResult.textContent = "Spin to choose a pair.";
@@ -818,6 +864,7 @@ function renderResult() {
     .join(" • ");
 
   elements.pairResult.textContent = latest;
+  elements.pairResult.title = latest;
   elements.pairMeta.textContent = history ? `Recent: ${history}` : "";
 }
 
