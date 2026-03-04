@@ -2,8 +2,10 @@ const TWO_PI = Math.PI * 2;
 const DEFAULT_PRIORITY = 9999;
 
 const state = {
-  allStudents: { male: [], female: [] },
-  pools: { male: [], female: [] },
+  allMale: [],
+  allFemale: [],
+  activeMale: [],
+  activeFemale: [],
   current: { male: null, female: null },
   spinning: false,
   usedPairs: new Set(),
@@ -21,6 +23,7 @@ const elements = {
   femalePoolStatus: document.getElementById("female-pool-status"),
   pairResult: document.getElementById("pair-result"),
   pairMeta: document.getElementById("pair-meta"),
+  refillStatus: document.getElementById("refill-status"),
 };
 
 const palettes = {
@@ -118,8 +121,8 @@ async function init() {
     }
 
     const data = await response.json();
-    state.allStudents.male = normalizeGroup(data.male);
-    state.allStudents.female = normalizeGroup(data.female);
+    state.allMale = normalizeGroup(data.male);
+    state.allFemale = normalizeGroup(data.female);
     state.usedPairs = new Set();
     state.pairHistory = [];
     refillPool("male");
@@ -156,8 +159,25 @@ function normalizeGroup(list) {
     .filter(Boolean);
 }
 
+function fullGroup(group) {
+  return group === "male" ? state.allMale : state.allFemale;
+}
+
+function activePool(group) {
+  return group === "male" ? state.activeMale : state.activeFemale;
+}
+
+function setActivePool(group, entries) {
+  if (group === "male") {
+    state.activeMale = entries;
+    return;
+  }
+
+  state.activeFemale = entries;
+}
+
 function filteredGroup(group) {
-  return state.allStudents[group].filter((student) => !student.excluded);
+  return fullGroup(group).filter((student) => !student.excluded);
 }
 
 function sortByQueue(a, b) {
@@ -171,7 +191,9 @@ function sortByQueue(a, b) {
 }
 
 function refillPool(group) {
-  state.pools[group] = [...filteredGroup(group)].sort(sortByQueue);
+  const entries = [...filteredGroup(group)].sort(sortByQueue);
+  setActivePool(group, entries);
+  return entries.length;
 }
 
 function pairKey(maleName, femaleName) {
@@ -187,18 +209,56 @@ function isExclusiveCompatible(maleEntry, femaleEntry) {
 }
 
 function removeByName(group, name) {
-  const index = state.pools[group].findIndex((entry) => entry.name === name);
+  const pool = activePool(group);
+  const index = pool.findIndex((entry) => entry.name === name);
   if (index === -1) {
     return null;
   }
-  return state.pools[group].splice(index, 1)[0];
+  return pool.splice(index, 1)[0];
+}
+
+function randomSample(entries, count) {
+  const shuffled = [...entries];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled.slice(0, count);
+}
+
+function ensurePoolsForSpin() {
+  const messages = [];
+
+  for (const group of ["male", "female"]) {
+    const pool = activePool(group);
+    if (pool.length > 0) {
+      continue;
+    }
+
+    const candidates = filteredGroup(group);
+    if (candidates.length === 0) {
+      continue;
+    }
+
+    const refillCount = Math.max(1, Math.min(3, candidates.length));
+    const refillEntries = randomSample(candidates, refillCount).sort(sortByQueue);
+    setActivePool(group, refillEntries);
+    messages.push(`Refilled ${group} pool with ${refillEntries.length} students`);
+  }
+
+  return messages;
+}
+
+function isEitherPoolBelowThreshold(threshold = 1) {
+  return state.activeMale.length < threshold || state.activeFemale.length < threshold;
 }
 
 function buildCandidatePairs() {
   const pairs = [];
 
-  for (const maleEntry of state.pools.male) {
-    for (const femaleEntry of state.pools.female) {
+  for (const maleEntry of state.activeMale) {
+    for (const femaleEntry of state.activeFemale) {
       if (!isExclusiveCompatible(maleEntry, femaleEntry)) {
         continue;
       }
@@ -245,12 +305,12 @@ function pickPairFromCurrentPools() {
   const femaleWinner = removeByName("female", nextPair.female.name);
   if (!maleWinner || !femaleWinner) {
     if (maleWinner) {
-      state.pools.male.push(maleWinner);
-      state.pools.male.sort(sortByQueue);
+      state.activeMale.push(maleWinner);
+      state.activeMale.sort(sortByQueue);
     }
     if (femaleWinner) {
-      state.pools.female.push(femaleWinner);
-      state.pools.female.sort(sortByQueue);
+      state.activeFemale.push(femaleWinner);
+      state.activeFemale.sort(sortByQueue);
     }
     return null;
   }
@@ -280,19 +340,14 @@ async function spinBoth() {
     return;
   }
 
-  if (state.pools.male.length === 0) {
-    refillPool("male");
-  }
-  if (state.pools.female.length === 0) {
-    refillPool("female");
-  }
-
-  const maleEntries = [...state.pools.male];
-  const femaleEntries = [...state.pools.female];
+  const refillMessages = ensurePoolsForSpin();
+  const maleEntries = [...state.activeMale];
+  const femaleEntries = [...state.activeFemale];
   const pair = pickPairFromCurrentPools();
 
   if (!pair) {
     elements.pairResult.textContent = "No valid pair can be formed with current constraints.";
+    elements.refillStatus.textContent = refillMessages.join(" • ");
     renderStatus();
     return;
   }
@@ -311,10 +366,16 @@ async function spinBoth() {
   state.current = pair;
   state.spinning = false;
   elements.spinBtn.disabled = false;
+
+  if (isEitherPoolBelowThreshold()) {
+    refillMessages.push(...ensurePoolsForSpin());
+  }
+
+  elements.refillStatus.textContent = refillMessages.join(" • ");
   renderResult();
   renderStatus();
-  maleWheel.draw(state.pools.male);
-  femaleWheel.draw(state.pools.female);
+  maleWheel.draw(state.activeMale);
+  femaleWheel.draw(state.activeFemale);
 }
 
 function resetPools() {
@@ -323,6 +384,7 @@ function resetPools() {
   state.current = { male: null, female: null };
   state.usedPairs = new Set();
   state.pairHistory = [];
+  elements.refillStatus.textContent = "Pools reset for a new round.";
   renderAll();
 }
 
@@ -347,15 +409,15 @@ function renderResult() {
 }
 
 function renderStatus() {
-  elements.malePoolStatus.textContent = `${state.pools.male.length} names left in active male pool`;
-  elements.femalePoolStatus.textContent = `${state.pools.female.length} names left in active female pool`;
+  elements.malePoolStatus.textContent = `${state.activeMale.length} names left in active male pool`;
+  elements.femalePoolStatus.textContent = `${state.activeFemale.length} names left in active female pool`;
 }
 
 function renderAll() {
   renderResult();
   renderStatus();
-  maleWheel.draw(state.pools.male);
-  femaleWheel.draw(state.pools.female);
+  maleWheel.draw(state.activeMale);
+  femaleWheel.draw(state.activeFemale);
 }
 
 elements.spinBtn.addEventListener("click", spinBoth);
