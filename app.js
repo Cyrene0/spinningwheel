@@ -1,10 +1,13 @@
 const TWO_PI = Math.PI * 2;
+const DEFAULT_PRIORITY = 9999;
 
 const state = {
   allStudents: { male: [], female: [] },
   pools: { male: [], female: [] },
   current: { male: null, female: null },
   spinning: false,
+  usedPairs: new Set(),
+  pairHistory: [],
 };
 
 const elements = {
@@ -17,6 +20,7 @@ const elements = {
   malePoolStatus: document.getElementById("male-pool-status"),
   femalePoolStatus: document.getElementById("female-pool-status"),
   pairResult: document.getElementById("pair-result"),
+  pairMeta: document.getElementById("pair-meta"),
 };
 
 const palettes = {
@@ -116,6 +120,8 @@ async function init() {
     const data = await response.json();
     state.allStudents.male = normalizeGroup(data.male);
     state.allStudents.female = normalizeGroup(data.female);
+    state.usedPairs = new Set();
+    state.pairHistory = [];
     refillPool("male");
     refillPool("female");
     renderAll();
@@ -131,18 +137,21 @@ function normalizeGroup(list) {
   }
 
   return list
-    .map((entry) => {
-      if (typeof entry === "string") {
-        return { name: entry, excluded: false, priority: false };
+    .map((entry, index) => {
+      if (!entry || typeof entry.name !== "string") {
+        return null;
       }
-      if (entry && typeof entry.name === "string") {
-        return {
-          name: entry.name,
-          excluded: Boolean(entry.excluded),
-          priority: Boolean(entry.priority),
-        };
-      }
-      return null;
+
+      const priority = Number.isFinite(Number(entry.priority)) ? Number(entry.priority) : DEFAULT_PRIORITY;
+      const exclusiveID = Number.isFinite(Number(entry.exclusiveID)) ? Number(entry.exclusiveID) : null;
+
+      return {
+        name: entry.name,
+        excluded: Boolean(entry.excluded),
+        priority,
+        exclusiveID,
+        order: index,
+      };
     })
     .filter(Boolean);
 }
@@ -151,26 +160,104 @@ function filteredGroup(group) {
   return state.allStudents[group].filter((student) => !student.excluded);
 }
 
-function refillPool(group) {
-  state.pools[group] = shuffle([...filteredGroup(group)]);
+function sortByQueue(a, b) {
+  if (a.priority !== b.priority) {
+    return a.priority - b.priority;
+  }
+  if (a.order !== b.order) {
+    return a.order - b.order;
+  }
+  return a.name.localeCompare(b.name);
 }
 
-function pickWinner(group) {
-  if (state.pools[group].length === 0) {
-    refillPool(group);
+function refillPool(group) {
+  state.pools[group] = [...filteredGroup(group)].sort(sortByQueue);
+}
+
+function pairKey(maleName, femaleName) {
+  return `${maleName}::${femaleName}`;
+}
+
+function isExclusiveCompatible(maleEntry, femaleEntry) {
+  if (maleEntry.exclusiveID == null && femaleEntry.exclusiveID == null) {
+    return true;
   }
 
-  const pool = state.pools[group];
-  if (pool.length === 0) {
+  return maleEntry.exclusiveID != null && maleEntry.exclusiveID === femaleEntry.exclusiveID;
+}
+
+function removeByName(group, name) {
+  const index = state.pools[group].findIndex((entry) => entry.name === name);
+  if (index === -1) {
+    return null;
+  }
+  return state.pools[group].splice(index, 1)[0];
+}
+
+function buildCandidatePairs() {
+  const pairs = [];
+
+  for (const maleEntry of state.pools.male) {
+    for (const femaleEntry of state.pools.female) {
+      if (!isExclusiveCompatible(maleEntry, femaleEntry)) {
+        continue;
+      }
+
+      const key = pairKey(maleEntry.name, femaleEntry.name);
+      if (state.usedPairs.has(key)) {
+        continue;
+      }
+
+      pairs.push({
+        male: maleEntry,
+        female: femaleEntry,
+        key,
+        rank: Math.min(maleEntry.priority, femaleEntry.priority),
+      });
+    }
+  }
+
+  return pairs.sort((a, b) => {
+    if (a.rank !== b.rank) {
+      return a.rank - b.rank;
+    }
+    if (a.male.priority !== b.male.priority) {
+      return a.male.priority - b.male.priority;
+    }
+    if (a.female.priority !== b.female.priority) {
+      return a.female.priority - b.female.priority;
+    }
+    if (a.male.order !== b.male.order) {
+      return a.male.order - b.male.order;
+    }
+    return a.female.order - b.female.order;
+  });
+}
+
+function pickPairFromCurrentPools() {
+  const candidatePairs = buildCandidatePairs();
+  const nextPair = candidatePairs[0];
+  if (!nextPair) {
     return null;
   }
 
-  const priorityIndex = pool.findIndex((entry) => entry.priority);
-  if (priorityIndex !== -1) {
-    return pool.splice(priorityIndex, 1)[0];
+  const maleWinner = removeByName("male", nextPair.male.name);
+  const femaleWinner = removeByName("female", nextPair.female.name);
+  if (!maleWinner || !femaleWinner) {
+    if (maleWinner) {
+      state.pools.male.push(maleWinner);
+      state.pools.male.sort(sortByQueue);
+    }
+    if (femaleWinner) {
+      state.pools.female.push(femaleWinner);
+      state.pools.female.sort(sortByQueue);
+    }
+    return null;
   }
 
-  return pool.pop();
+  state.usedPairs.add(nextPair.key);
+  state.pairHistory.push({ male: maleWinner.name, female: femaleWinner.name, rank: nextPair.rank });
+  return { male: maleWinner, female: femaleWinner, rank: nextPair.rank };
 }
 
 function wheelRotationForWinner(entries, winnerName, currentRotation) {
@@ -193,14 +280,19 @@ async function spinBoth() {
     return;
   }
 
+  if (state.pools.male.length === 0) {
+    refillPool("male");
+  }
+  if (state.pools.female.length === 0) {
+    refillPool("female");
+  }
+
   const maleEntries = [...state.pools.male];
   const femaleEntries = [...state.pools.female];
+  const pair = pickPairFromCurrentPools();
 
-  const maleWinner = pickWinner("male");
-  const femaleWinner = pickWinner("female");
-
-  if (!maleWinner && !femaleWinner) {
-    elements.pairResult.textContent = "No available students in JSON data.";
+  if (!pair) {
+    elements.pairResult.textContent = "No valid pair can be formed with current constraints.";
     renderStatus();
     return;
   }
@@ -208,19 +300,15 @@ async function spinBoth() {
   state.spinning = true;
   elements.spinBtn.disabled = true;
 
-  const maleFinal = maleWinner
-    ? wheelRotationForWinner(maleEntries, maleWinner.name, maleWheel.rotation)
-    : maleWheel.rotation;
-  const femaleFinal = femaleWinner
-    ? wheelRotationForWinner(femaleEntries, femaleWinner.name, femaleWheel.rotation)
-    : femaleWheel.rotation;
+  const maleFinal = wheelRotationForWinner(maleEntries, pair.male.name, maleWheel.rotation);
+  const femaleFinal = wheelRotationForWinner(femaleEntries, pair.female.name, femaleWheel.rotation);
 
   await Promise.all([
     maleWheel.animateTo(maleFinal, maleEntries, 3800),
     femaleWheel.animateTo(femaleFinal, femaleEntries, 3500),
   ]);
 
-  state.current = { male: maleWinner, female: femaleWinner };
+  state.current = pair;
   state.spinning = false;
   elements.spinBtn.disabled = false;
   renderResult();
@@ -233,6 +321,8 @@ function resetPools() {
   refillPool("male");
   refillPool("female");
   state.current = { male: null, female: null };
+  state.usedPairs = new Set();
+  state.pairHistory = [];
   renderAll();
 }
 
@@ -242,10 +332,18 @@ function renderResult() {
 
   if (!state.current.male && !state.current.female) {
     elements.pairResult.textContent = "Spin to choose a pair.";
+    elements.pairMeta.textContent = "";
     return;
   }
 
-  elements.pairResult.textContent = `${state.current.male?.name ?? "(none)"} + ${state.current.female?.name ?? "(none)"}`;
+  const latest = `${state.current.male?.name ?? "(none)"} + ${state.current.female?.name ?? "(none)"}`;
+  const history = state.pairHistory
+    .slice(-3)
+    .map((pair) => `${pair.male} + ${pair.female}`)
+    .join(" • ");
+
+  elements.pairResult.textContent = latest;
+  elements.pairMeta.textContent = history ? `Recent: ${history}` : "";
 }
 
 function renderStatus() {
@@ -258,14 +356,6 @@ function renderAll() {
   renderStatus();
   maleWheel.draw(state.pools.male);
   femaleWheel.draw(state.pools.female);
-}
-
-function shuffle(list) {
-  for (let i = list.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [list[i], list[j]] = [list[j], list[i]];
-  }
-  return list;
 }
 
 elements.spinBtn.addEventListener("click", spinBoth);
