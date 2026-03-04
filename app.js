@@ -23,6 +23,7 @@ const state = {
 };
 
 const elements = {
+  appShell: document.querySelector(".app-shell"),
   spinBtn: document.getElementById("spin-btn"),
   resetBtn: document.getElementById("reset-btn"),
   settingsBtn: document.getElementById("settings-btn"),
@@ -45,6 +46,17 @@ const elements = {
   refillStatus: document.getElementById("refill-status"),
   newRoundBtn: document.getElementById("new-round-btn"),
 };
+
+const focusableSettingsSelector = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+let settingsPanelOpener = null;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -420,10 +432,35 @@ function setSettingsPanelOpen(isOpen) {
     return;
   }
 
+  if (isOpen) {
+    settingsPanelOpener = document.activeElement instanceof HTMLElement ? document.activeElement : elements.settingsBtn;
+  }
+
   elements.settingsPanel.classList.toggle("open", isOpen);
   elements.settingsPanel.setAttribute("aria-hidden", String(!isOpen));
   elements.settingsBackdrop.hidden = !isOpen;
   elements.settingsBtn.setAttribute("aria-expanded", String(isOpen));
+
+  if (elements.appShell) {
+    elements.appShell.toggleAttribute("inert", isOpen);
+    if (isOpen) {
+      elements.appShell.setAttribute("aria-hidden", "true");
+    } else {
+      elements.appShell.removeAttribute("aria-hidden");
+    }
+  }
+
+  if (isOpen) {
+    const focusTargets = elements.settingsPanel.querySelectorAll(focusableSettingsSelector);
+    const preferredFocus = elements.settingsCloseBtn ?? focusTargets[0];
+    preferredFocus?.focus();
+    return;
+  }
+
+  const restoreTarget = settingsPanelOpener instanceof HTMLElement && settingsPanelOpener.isConnected
+    ? settingsPanelOpener
+    : elements.settingsBtn;
+  restoreTarget.focus();
 }
 
 function bindSettingsPanelControls() {
@@ -440,8 +477,39 @@ function bindSettingsPanelControls() {
   }
 
   document.addEventListener("keydown", (event) => {
+    if (!elements.settingsPanel?.classList.contains("open")) {
+      return;
+    }
+
     if (event.key === "Escape") {
       setSettingsPanelOpen(false);
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusables = Array.from(elements.settingsPanel.querySelectorAll(focusableSettingsSelector));
+    if (focusables.length === 0) {
+      event.preventDefault();
+      elements.settingsPanel.focus();
+      return;
+    }
+
+    const firstFocusable = focusables[0];
+    const lastFocusable = focusables[focusables.length - 1];
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey && activeElement === firstFocusable) {
+      event.preventDefault();
+      lastFocusable.focus();
+      return;
+    }
+
+    if (!event.shiftKey && activeElement === lastFocusable) {
+      event.preventDefault();
+      firstFocusable.focus();
     }
   });
 }
