@@ -136,6 +136,14 @@ canvas {
   font-weight: 800;
 }
 
+.pair-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #8a3a67;
+  min-height: 1.2em;
+}
+
 @media (max-width: 860px) {
   .wheels {
     grid-template-columns: 1fr;

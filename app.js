@@ -20,6 +20,7 @@ const elements = {
   malePoolStatus: document.getElementById("male-pool-status"),
   femalePoolStatus: document.getElementById("female-pool-status"),
   pairResult: document.getElementById("pair-result"),
+  pairMeta: document.getElementById("pair-meta"),
 };
 
 const palettes = {
@@ -331,15 +332,18 @@ function renderResult() {
 
   if (!state.current.male && !state.current.female) {
     elements.pairResult.textContent = "Spin to choose a pair.";
+    elements.pairMeta.textContent = "";
     return;
   }
 
   const latest = `${state.current.male?.name ?? "(none)"} + ${state.current.female?.name ?? "(none)"}`;
   const history = state.pairHistory
-    .slice(-4)
-    .map((pair) => `${pair.male}+${pair.female}(p${pair.rank})`)
-    .join(" | ");
-  elements.pairResult.textContent = history ? `${latest} (queue: ${history})` : latest;
+    .slice(-3)
+    .map((pair) => `${pair.male} + ${pair.female}`)
+    .join(" • ");
+
+  elements.pairResult.textContent = latest;
+  elements.pairMeta.textContent = history ? `Recent: ${history}` : "";
 }
 
 function renderStatus() {
