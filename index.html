@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pair Spinner Wheels</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <h1>🎡 Pair Spinner 🎀</h1>
+        <p>Spin both wheels together to pick the current pair.</p>
+      </header>
+
+      <section class="controls card" aria-label="wheel controls">
+        <button id="spin-btn" class="btn btn-primary" type="button">Spin Both Wheels</button>
+        <button id="reset-btn" class="btn btn-secondary" type="button">Reset Pools</button>
+      </section>
+
+      <section class="wheels" aria-label="student wheels">
+        <article class="wheel-card card" id="male-wheel-card">
+          <h2>Male Wheel</h2>
+          <div class="wheel-frame">
+            <div class="pointer" aria-hidden="true"></div>
+            <canvas id="male-wheel" width="360" height="360"></canvas>
+          </div>
+          <p class="picked-name" id="male-name">—</p>
+          <p class="pool-status" id="male-pool-status"></p>
+        </article>
+
+        <article class="wheel-card card" id="female-wheel-card">
+          <h2>Female Wheel</h2>
+          <div class="wheel-frame">
+            <div class="pointer" aria-hidden="true"></div>
+            <canvas id="female-wheel" width="360" height="360"></canvas>
+          </div>
+          <p class="picked-name" id="female-name">—</p>
+          <p class="pool-status" id="female-pool-status"></p>
+        </article>
+      </section>
+
+      <section class="result card" aria-live="polite">
+        <h2>Current Pair</h2>
+        <p id="pair-result">Spin to choose a pair.</p>
+      </section>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

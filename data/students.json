@@ -1,0 +1,16 @@
+{
+  "male": [
+    { "name": "Alex", "priority": true },
+    { "name": "Brian" },
+    { "name": "Carter" },
+    { "name": "Diego", "excluded": true },
+    { "name": "Evan" }
+  ],
+  "female": [
+    { "name": "Ava", "priority": true },
+    { "name": "Bella" },
+    { "name": "Chloe" },
+    { "name": "Diana" },
+    { "name": "Emma", "excluded": true }
+  ]
+}
