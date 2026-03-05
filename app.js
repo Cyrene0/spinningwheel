@@ -8,6 +8,7 @@ import {
   storeThemeBaseColor,
 } from "./theme.js";
 import {
+  buildCandidatePairs,
   ensurePoolsForSpin,
   isEitherPoolBelowThreshold,
   normalizeGroup,
@@ -246,6 +247,42 @@ async function animatePickedPair(maleEntries, femaleEntries, pickedPair) {
   elements.femaleWheelCard?.classList.remove("spinning");
 }
 
+function pickFemaleOnlyRespin(beforePending) {
+  const fixedMale = beforePending.picked.pair.male;
+  const previousFemale = beforePending.picked.pair.female;
+  const replayState = {
+    activeMale: [fixedMale],
+    activeFemale: beforePending.baseFemale,
+    usedPairs: state.usedPairs,
+    pairHistory: state.pairHistory,
+  };
+
+  const { pairs } = buildCandidatePairs(replayState);
+  if (!pairs.length) {
+    return null;
+  }
+
+  const alternatives = pairs.filter((entry) => entry.female.id !== previousFemale.id);
+  const candidateList = alternatives.length ? alternatives : pairs;
+  const selected = candidateList[Math.floor(Math.random() * candidateList.length)];
+
+  if (!selected) {
+    return null;
+  }
+
+  return {
+    pair: {
+      male: fixedMale,
+      female: selected.female,
+      rank: selected.rank,
+    },
+    male: beforePending.baseMale.filter((entry) => entry.id !== fixedMale.id),
+    female: beforePending.baseFemale.filter((entry) => entry.id !== selected.female.id),
+    usedPairs: new Set(state.usedPairs).add(selected.key),
+    pairHistory: [...state.pairHistory, { male: fixedMale.name, female: selected.female.name, rank: selected.rank }],
+  };
+}
+
 async function spinBoth() {
   if (state.spinning || state.roundState?.requiresConfirmation || state.pendingSpin) {
     return;
@@ -342,14 +379,7 @@ elements.resultRespinBtn?.addEventListener("click", async () => {
   }
 
   const before = state.pendingSpin;
-  const replayState = {
-    activeMale: before.baseMale,
-    activeFemale: before.baseFemale,
-    usedPairs: state.usedPairs,
-    pairHistory: state.pairHistory,
-  };
-
-  const repicked = pickPairFromCurrentPools(replayState);
+  const repicked = pickFemaleOnlyRespin(before);
   if (!repicked.pair) {
     state.pendingSpin.respinUsed = true;
     showSpinDecisionPopup();
@@ -357,7 +387,10 @@ elements.resultRespinBtn?.addEventListener("click", async () => {
   }
 
   toggleResultPopup(false);
-  await animatePickedPair(before.baseMale, before.baseFemale, repicked.pair);
+  state.current = { male: repicked.pair.male, female: null };
+  updateLiveSpinLabel(elements.maleName, repicked.pair.male);
+  updateLiveSpinLabel(elements.femaleName, null);
+  await animatePickedPair([repicked.pair.male], before.baseFemale, repicked.pair);
 
   state.pendingSpin = {
     ...before,

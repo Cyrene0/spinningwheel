@@ -338,7 +338,11 @@ canvas {
   background: linear-gradient(180deg, #fff9fd, #ffeef8);
   border: 2px solid var(--theme-card-border);
   border-radius: 18px;
-  box-shadow: 0 20px 44px rgba(62, 10, 40, 0.35);
+  box-shadow:
+    0 26px 58px rgba(58, 8, 36, 0.34),
+    0 10px 24px rgba(74, 12, 46, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+  filter: drop-shadow(0 14px 24px rgba(48, 6, 30, 0.2));
   padding: 1.1rem;
   z-index: 40;
   text-align: center;
