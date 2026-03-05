@@ -48,7 +48,9 @@
       "name": "Hoàng Hải Nam"
     },
     {
-      "name": "Trần Ngọc Hải Nam"
+      "name": "Trần Ngọc Hải Nam",
+      "priority": 17,
+      "exclusiveID": 1002
     },
     {
       "name": "Đặng Đình Nghĩa"
@@ -157,7 +159,9 @@
       "name": "Nguyễn Minh Hà"
     },
     {
-      "name": "Trần Ngọc Minh"
+      "name": "Trần Ngọc Minh",
+      "priority": 17,
+      "exclusiveID": 1002
     },
     {
       "name": "Hồ Bảo Trân"
