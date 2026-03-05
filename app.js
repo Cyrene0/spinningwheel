@@ -36,10 +36,10 @@ const state = {
 };
 
 const FUNNY_SPIN_MESSAGES = [
-  "✨ Chemistry check... loading romantic algorithm.",
-  "😂 If this pairing is awkward, you get one rescue respin.",
-  "🎉 Destiny has spoken. But destiny allows one appeal.",
-  "🫶 Cute matchup unlocked! Need a reroll? You have one.",
+  "✨ Đang kiểm tra độ hợp nhau... thuật toán tình yêu đang chạy.",
+  "😭 Nếu ghép đôi này hơi ngại, bạn được quay lại 1 lần để cứu tình thế.",
+  "🎉 Định mệnh đã chọn rồi. Nhưng bạn vẫn có 1 lần xin quay lại.",
+  "🫶 Cặp đôi dễ thương đã xuất hiện! Muốn quay lại không? Bạn có 1 lần thôi nhé.",
 ];
 
 const elements = createElements();
@@ -203,10 +203,10 @@ function showSpinDecisionPopup() {
   elements.resultPopupMessage.textContent = randomFunnyMessage();
 
   if (respinUsed) {
-    elements.resultPopupHint.textContent = "Respin already used. Keep this pair 💞";
+    elements.resultPopupHint.textContent = "Đã sử dụng hết lượt quay lại, phải chịu thui 💞";
     elements.resultRespinBtn.disabled = true;
   } else {
-    elements.resultPopupHint.textContent = "You may respin once. You can still get the same pair again 🎲";
+    elements.resultPopupHint.textContent = "Bạn có thể quay lại nếu một trong hai không mong muốn kết quả này 🎲";
     elements.resultRespinBtn.disabled = false;
   }
 
