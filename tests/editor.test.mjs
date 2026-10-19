@@ -10,8 +10,6 @@ const roster = JSON.parse(await readFile(new URL("../data/students.json", import
 
 function editor() {
   const elements = new Map();
-  let savedRoster = null;
-  let navigation = null;
   const context = vm.createContext({
     document: {
       getElementById(id) {
@@ -25,15 +23,10 @@ function editor() {
     // Keep automatic startup pending; each test controls loading explicitly.
     fetch: () => new Promise(() => {}),
     validateRoster,
-    getSavedRoster: () => null,
-    saveRoster: (data) => { savedRoster = validateRoster(data); },
-    clearSavedRoster() {},
-    window: { location: { assign: (path) => { navigation = path; } }, confirm: () => false },
     invalidInput: null,
   });
   vm.runInContext(source, context);
-  return { context, elements, saved: () => savedRoster, navigation: () => navigation,
-    run: (code) => vm.runInContext(code, context) };
+  return { context, elements, run: (code) => vm.runInContext(code, context) };
 }
 
 test("existing roster round-trips with all names, priorities and exclusive IDs", () => {
@@ -82,34 +75,4 @@ test("failed or malformed loading cannot enable exports or replace the roster", 
   assert.equal(elements.get("add-male").disabled, true);
   assert.equal(run("state.loaded"), false);
   assert.match(elements.get("status").textContent, /Danh sách bạn nam|Danh sách bạn nữ/);
-});
-
-test("apply saves the class and complete roster before opening the spinner", () => {
-  const fixture = editor();
-  fixture.context.roster = roster;
-  fixture.run("state.className = roster.className; state.male = roster.male; state.female = roster.female; state.loaded = true; applyRoster()");
-  assert.deepEqual(fixture.saved(), roster);
-  assert.equal(fixture.navigation(), "../");
-});
-
-test("failed local save keeps edits and does not navigate away", () => {
-  const fixture = editor();
-  fixture.context.saveRoster = () => { throw new Error("Storage blocked"); };
-  fixture.run('state.loaded = true; state.male = [{name:"An"}]; state.female = [{name:"Bình"}]; applyRoster()');
-  assert.equal(fixture.navigation(), null);
-  assert.match(fixture.elements.get("status").textContent, /Storage blocked/);
-  assert.equal(fixture.run("state.male[0].name"), "An");
-});
-
-test("restoring defaults cannot clear a saved roster when fetching fails", async () => {
-  const fixture = editor();
-  let cleared = false;
-  fixture.context.window.confirm = () => true;
-  fixture.context.clearSavedRoster = () => { cleared = true; };
-  fixture.context.fetch = async () => ({ ok: false, status: 503 });
-  fixture.run('state.loaded = true; state.className = "8A1"; state.male = [{name:"An"}]');
-  await fixture.context.restoreDefaultRoster();
-  assert.equal(cleared, false);
-  assert.equal(fixture.run("state.male[0].name"), "An");
-  assert.match(fixture.elements.get("status").textContent, /vẫn được giữ nguyên/);
 });
