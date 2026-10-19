@@ -65,9 +65,9 @@ test("settings use native modal opening and restore focus after close", () => {
   assert.equal(elements.settingsBtn.focused, true);
 });
 
-test("the hint reflects disabled respins", () => {
+test("idle controls do not add explanatory filler", () => {
   const { elements, state } = fixture();
   state.settings.allowRespin = false;
   renderStatus(elements, state);
-  assert.match(elements.spinStatus.textContent, /xác nhận ngay/);
+  assert.equal(elements.spinStatus.textContent, "");
 });

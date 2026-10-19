@@ -54,6 +54,7 @@ canvas { display: block; width: 100%; height: auto; border-radius: 50%; border: 
 .controls { display: flex; justify-content: center; flex-wrap: wrap; align-items: center; gap: 10px; padding: 2px 0; }
 .controls .btn-primary { min-width: 220px; min-height: 48px; font-size: 15px; }
 .control-hint { width: 100%; text-align: center; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.control-hint:empty { display: none; }
 .result { padding: 22px 24px; }
 .result-heading p { color: var(--muted); font-size: 13px; margin: 0; }
 #pair-result { margin: 15px 0 0; color: var(--theme-dark); font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
@@ -65,7 +66,6 @@ canvas { display: block; width: 100%; height: auto; border-radius: 50%; border: 
 .refill-status { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 12px 0 0; }
 .refill-status:empty { display: none; }
 #new-round-btn { margin-top: 16px; }
-.app-footer { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; }
 dialog { color: var(--text); border: 1px solid var(--border); background: #fff; box-shadow: 0 24px 90px #30203830; padding: 28px; max-height: calc(100dvh - 32px); overflow-y: auto; }
 dialog::backdrop { background: #251b31a6; backdrop-filter: blur(4px); }
 .settings-panel { width: min(400px, calc(100% - 32px)); border-radius: 18px; }
@@ -81,7 +81,6 @@ dialog::backdrop { background: #251b31a6; backdrop-filter: blur(4px); }
 .setting-value { color: var(--muted); margin: 0; font-size: 13px; }
 .result-popup { width: min(520px, calc(100% - 32px)); border-radius: 22px; text-align: center; }
 .result-popup h2 { font-size: 23px; margin: 8px 0 14px; }
-.result-popup-message { color: var(--muted); font-size: 14px; line-height: 1.7; }
 .result-popup-pair { color: var(--theme-dark); font-size: 25px; font-weight: 700; line-height: 1.5; margin: 25px 0; overflow-wrap: anywhere; }
 .result-popup-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .result-popup-hint { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 16px 0 0; }

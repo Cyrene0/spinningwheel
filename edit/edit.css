@@ -20,17 +20,17 @@ button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
 .back-link { display: inline-block; margin-bottom: 20px; color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 650; }
 .back-link:hover { text-decoration: underline; }
 h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); line-height: 1.2; letter-spacing: -.045em; font-weight: 650; }
-.intro { color: var(--muted); margin: 12px 0 0; font-size: 15px; }
-.editor-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 14px 24px; align-items: center; padding: 22px 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
-.toolbar-title { margin: 0; font-size: 16px; font-weight: 650; }
-.toolbar-note { color: var(--muted); margin: 2px 0 0; font-size: 12px; }
+.editor-toolbar { padding: 22px 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.roster-options { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+.class-field { display: grid; gap: 6px; max-width: 260px; flex: 1; }
+.class-field label { font-size: 13px; font-weight: 600; }
 button { min-height: 42px; border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 9px; padding: 9px 15px; font-size: 12px; font-weight: 650; cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--accent); background: #fcf8fa; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 .primary-btn { border-color: var(--accent); background: var(--accent); color: white; }
 .primary-btn:hover:not(:disabled) { background: #622746; color: white; }
-#status { grid-column: 1 / -1; min-height: 20px; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--accent); font-size: 12px; }
+#status { min-height: 20px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--accent); font-size: 12px; }
 .editor-note { padding: 14px 18px; border-radius: 10px; background: var(--pink); color: #6f4b61; font-size: 12px; }
 .editor-note strong { font-weight: 700; }
 code { font-size: .95em; }
@@ -64,6 +64,8 @@ footer span { padding: 0 6px; }
   .editor-shell { width: calc(100% - 28px); margin-top: 24px; gap: 16px; }
   .editor-toolbar { grid-template-columns: 1fr; padding: 18px; gap: 14px; }
   .actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .roster-options { align-items: start; flex-direction: column; gap: 12px; }
+  .class-field { width: 100%; max-width: none; }
   .actions button { padding: 10px; }
   .section-heading { padding: 18px; }
   .table-wrap { padding-right: 10px; padding-left: 10px; }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#763455" />
-    <title>Quản lý danh sách · Spinning Wheel</title>
+    <title>Danh sách lớp 8A1 · Vòng quay màu hồng</title>
     <link rel="stylesheet" href="./edit.css" />
   </head>
   <body>
@@ -12,26 +12,26 @@
       <header class="editor-header">
         <a class="back-link" href="../">← Về vòng quay</a>
         <h1>Danh sách lớp</h1>
-        <p class="intro">Thêm và sửa tên, thiết lập quy tắc ghép cặp.</p>
       </header>
 
       <section class="editor-toolbar" aria-label="Thao tác danh sách">
-        <div>
-          <p class="toolbar-title">Danh sách của bạn</p>
-          <p class="toolbar-note">Chỉnh sửa tại đây, tải về khi đã sẵn sàng.</p>
-        </div>
         <div class="actions">
           <button id="copy-json" type="button" disabled>Sao chép JSON</button>
-          <button id="download-json" class="primary-btn" type="button" disabled>Tải students.json ↓</button>
+          <button id="download-json" class="primary-btn" type="button" disabled>Tải JSON</button>
         </div>
         <p id="status" role="status" aria-live="polite">Đang tải danh sách…</p>
       </section>
 
       <aside class="editor-note" aria-label="Hướng dẫn lưu danh sách">
-        <strong>Nhớ lưu bản chỉnh sửa.</strong>
-        Trang này không tự ghi lên máy chủ. Tải tệp về rồi thay thế <code>data/students.json</code> trong dự án để vòng quay sử dụng danh sách mới.
+        Vòng quay dùng file <code>data/students.json</code> trên GitHub. Sửa xong, tải JSON rồi thay file đó trong dự án.
       </aside>
 
+      <section class="roster-options" aria-label="Thông tin lớp">
+        <div class="class-field">
+          <label for="class-name-input">Tên lớp</label>
+          <input id="class-name-input" type="text" maxlength="60" placeholder="Ví dụ: 8A1" disabled />
+        </div>
+      </section>
       <section class="card" aria-labelledby="male-heading">
         <div class="section-heading">
           <h2 id="male-heading">Danh sách nam <span id="male-count" class="count">0</span></h2>
@@ -84,7 +84,6 @@
         <label class="sr-only" for="json-preview">Nội dung JSON được tạo từ danh sách</label>
         <textarea id="json-preview" rows="12" readonly spellcheck="false"></textarea>
       </section>
-      <footer>Spinning Wheel <span aria-hidden="true">·</span> Sẵn sàng cho những cặp đôi bất ngờ.</footer>
     </main>
 
     <script type="module" src="./edit.js"></script>

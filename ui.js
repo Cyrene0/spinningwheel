@@ -4,6 +4,7 @@ import { clamp } from "./theme.js";
 export function createElements() {
   const ids = {
     spinBtn: "spin-btn", resetBtn: "reset-btn", spinStatus: "spin-status",
+    className: "class-name",
     settingsBtn: "settings-btn", settingsCloseBtn: "settings-close-btn", settingsPanel: "settings-panel",
     themeColorInput: "theme-color", themeResetBtn: "theme-reset-btn",
     spinDurationRange: "spin-duration-range", spinDurationValue: "spin-duration-value",
@@ -15,7 +16,7 @@ export function createElements() {
     pairResult: "pair-result", pairMeta: "pair-meta", pairCount: "pair-count",
     historySection: "history-section", refillStatus: "refill-status", newRoundBtn: "new-round-btn",
     particleLayer: "particle-layer", resultPopup: "result-popup",
-    resultPopupMessage: "result-popup-message", resultPopupPair: "result-popup-pair",
+    resultPopupPair: "result-popup-pair",
     resultPopupHint: "result-popup-hint", resultKeepBtn: "result-keep-btn", resultRespinBtn: "result-respin-btn",
   };
   return Object.fromEntries(Object.entries(ids).map(([key, id]) => [key, document.getElementById(id)]));
@@ -78,9 +79,9 @@ export function renderResult(elements, state) {
   elements.femaleName.title = state.current.female?.name ?? "";
   const latest = state.current.male && state.current.female
     ? state.current.male.name + " + " + state.current.female.name
-    : "Nhấn “Quay ghép cặp” để chọn cặp tặng quà.";
+    : "Bấm Quay để bắt đầu.";
   elements.pairResult.textContent = latest;
-  elements.pairCount.textContent = state.pairHistory.length ? state.pairHistory.length + " cặp đã ghép" : "Chưa có cặp nào";
+  elements.pairCount.textContent = state.pairHistory.length ? state.pairHistory.length + " cặp đã ghép" : "";
   const recent = state.pairHistory.slice(-state.settings.recentCount).reverse();
   elements.pairMeta.replaceChildren(...recent.map((pair) => {
     const row = document.createElement("li");
@@ -98,13 +99,12 @@ export function renderStatus(elements, state) {
   elements.spinBtn.disabled = busy || requiresConfirmation;
   elements.resetBtn.disabled = busy;
   elements.settingsBtn.disabled = state.spinning || Boolean(state.pendingSpin);
-  elements.spinBtn.textContent = state.spinning ? "Đang quay…" : "Quay ghép cặp ↗";
+  elements.spinBtn.textContent = state.spinning ? "Đang quay…" : "Quay";
   elements.spinStatus.textContent = state.loading ? "Đang tải danh sách lớp…"
-    : state.spinning ? "Cùng chờ xem hai cái tên được chọn nhé."
-    : state.pendingSpin ? "Giữ kết quả hoặc quay lại bạn nữ một lần."
+    : state.spinning ? "Đang quay…"
+    : state.pendingSpin ? ""
     : requiresConfirmation ? "Bắt đầu lượt mới để tiếp tục ghép cặp."
-    : state.settings.allowRespin ? "Mỗi kết quả được phép quay lại bạn nữ một lần."
-    : "Kết quả được xác nhận ngay sau khi quay.";
+    : "";
   elements.newRoundBtn.hidden = !requiresConfirmation;
   const message = getRoundStateMessage(state.roundState);
   if (message) elements.refillStatus.textContent = message;
