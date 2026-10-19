@@ -1,109 +1,101 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pair Spinner Wheels</title>
+    <meta name="theme-color" content="#6a1046" />
+    <meta name="description" content="Vòng quay ghép cặp tặng quà 8/3 dành cho lớp học." />
+    <title>Vòng quay 8/3 · Ghép cặp tặng quà</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="bg-orb orb-a" aria-hidden="true"></div>
-    <div class="bg-orb orb-b" aria-hidden="true"></div>
     <div id="particle-layer" class="particle-layer" aria-hidden="true"></div>
-
     <main class="app-shell">
       <header class="hero">
-        <h1>🎡 Vòng quay 8/3 🎀</h1>
-        <p>Chọn ra bạn nam để tặng quà bạn nữ ❤️</p>
+        <div>
+          <h1>Vòng quay <span>8/3</span></h1>
+          <p>Ghép một cặp bạn, gửi một món quà.</p>
+        </div>
+        <nav class="header-actions" aria-label="Công cụ">
+          <a class="btn btn-secondary" href="./edit/">Danh sách lớp</a>
+          <button id="settings-btn" class="btn btn-secondary" type="button" aria-controls="settings-panel" aria-expanded="false">Cài đặt</button>
+        </nav>
       </header>
-
-      <section class="controls card" aria-label="wheel controls">
-        <button id="spin-btn" class="btn btn-primary" type="button">Quay</button>
-        <button id="reset-btn" class="btn btn-secondary" type="button">Reset vòng quay</button>
-        <button id="settings-btn" class="btn btn-secondary" type="button" aria-controls="settings-panel" aria-expanded="false">
-          ⚙️ Cài đặt
-        </button>
-      </section>
-
-      <section class="wheels" aria-label="student wheels">
+      <section class="wheels" aria-label="Vòng quay ghép cặp">
         <article class="wheel-card card" id="male-wheel-card">
-          <h2>Bạn nam</h2>
+          <div class="wheel-heading"><h2>Bạn nam</h2><p class="pool-status" id="male-pool-status"></p></div>
           <div class="wheel-frame">
             <div class="pointer" aria-hidden="true"></div>
-            <canvas id="male-wheel" width="440" height="440"></canvas>
+            <canvas id="male-wheel" width="440" height="440" role="img" aria-label="Vòng quay bạn nam. Tên được chọn hiển thị bên dưới."></canvas>
           </div>
           <p class="picked-name" id="male-name">—</p>
-          <p class="pool-status" id="male-pool-status"></p>
         </article>
-
         <article class="wheel-card card" id="female-wheel-card">
-          <h2>Bạn nữ</h2>
+          <div class="wheel-heading"><h2>Bạn nữ</h2><p class="pool-status" id="female-pool-status"></p></div>
           <div class="wheel-frame">
             <div class="pointer" aria-hidden="true"></div>
-            <canvas id="female-wheel" width="440" height="440"></canvas>
+            <canvas id="female-wheel" width="440" height="440" role="img" aria-label="Vòng quay bạn nữ. Tên được chọn hiển thị bên dưới."></canvas>
           </div>
           <p class="picked-name" id="female-name">—</p>
-          <p class="pool-status" id="female-pool-status"></p>
         </article>
       </section>
-
-      <section class="result card" aria-live="polite">
-        <h2>Kết quả</h2>
-        <p id="pair-result">Quay để chọn cặp tặng quà.</p>
-        <p id="pair-meta" class="pair-meta"></p>
-        <p id="refill-status" class="refill-status" role="status" aria-live="polite"></p>
-        <button id="new-round-btn" class="btn btn-primary" type="button" hidden>Quay</button>
+      <section class="controls" aria-label="Điều khiển vòng quay">
+        <button id="spin-btn" class="btn btn-primary" type="button" disabled>Quay ghép cặp <span aria-hidden="true">↗</span></button>
+        <button id="reset-btn" class="btn btn-secondary" type="button" disabled>Bắt đầu lại</button>
+        <p id="spin-status" class="control-hint" role="status">Đang tải danh sách lớp…</p>
       </section>
+      <section class="result card" aria-labelledby="result-title">
+        <div class="result-heading"><h2 id="result-title">Kết quả ghép cặp</h2><p id="pair-count"></p></div>
+        <p id="pair-result" aria-live="polite">Đang tải danh sách lớp…</p>
+        <div id="history-section" class="history-section" hidden>
+          <h3>Các cặp gần đây</h3>
+          <ol id="pair-meta" class="pair-meta"></ol>
+        </div>
+        <p id="refill-status" class="refill-status" role="status"></p>
+        <button id="new-round-btn" class="btn btn-primary" type="button" hidden>Bắt đầu lượt mới</button>
+      </section>
+      <footer class="app-footer">Chúc các bạn một ngày 8/3 thật nhiều niềm vui.</footer>
     </main>
-
-    <div id="settings-backdrop" class="settings-backdrop" hidden></div>
-    <aside id="settings-panel" class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-panel-title" aria-label="app settings" aria-hidden="true" tabindex="-1">
+    <dialog id="settings-panel" class="settings-panel" aria-labelledby="settings-panel-title">
       <div class="settings-header">
         <h2 id="settings-panel-title">Cài đặt</h2>
-        <button id="settings-close-btn" class="btn btn-secondary" type="button">Đóng</button>
+        <button id="settings-close-btn" class="btn btn-secondary" type="button" autofocus>Đóng</button>
       </div>
-
-      <section class="setting-group" aria-label="theme settings">
-        <h3>Theme</h3>
-        <label for="theme-color">Tone màu</label>
-        <input id="theme-color" type="color" value="#ff5eaf" aria-label="Select base theme color" />
-        <button id="theme-reset-btn" class="btn btn-secondary" type="button">Reset về mặc định</button>
+      <section class="setting-group" aria-label="Giao diện">
+        <h3>Giao diện</h3>
+        <label for="theme-color">Màu vòng quay</label>
+        <input id="theme-color" type="color" value="#ff5eaf" />
+        <button id="theme-reset-btn" class="btn btn-secondary" type="button">Màu mặc định</button>
       </section>
-
-      <section class="setting-group" aria-label="spin settings">
+      <section class="setting-group" aria-label="Thời gian quay">
         <h3>Quay</h3>
         <label for="spin-duration-range">Thời gian cho mỗi lần quay</label>
         <input id="spin-duration-range" type="range" min="1800" max="6000" step="100" value="3600" />
-        <p class="setting-value" id="spin-duration-value">3.6s</p>
+        <p class="setting-value" id="spin-duration-value">3,6 giây</p>
       </section>
-
-      <section class="setting-group" aria-label="respin settings">
+      <section class="setting-group" aria-label="Quay lại">
         <h3>Quay lại</h3>
         <label class="setting-checkbox" for="allow-respin-input">
           <input id="allow-respin-input" type="checkbox" checked />
           Cho phép quay lại 1 lần khi hiện kết quả
         </label>
       </section>
-
-      <section class="setting-group" aria-label="history settings">
+      <section class="setting-group" aria-label="Lịch sử">
         <h3>Lịch sử</h3>
-        <label for="history-count-input">Lưu kết quả bao nhiêu cặp</label>
+        <label for="history-count-input">Số cặp gần đây hiển thị</label>
         <input id="history-count-input" type="number" min="1" max="8" step="1" value="3" />
       </section>
-    </aside>
-
-    <div id="result-backdrop" class="result-backdrop" hidden></div>
-    <aside id="result-popup" class="result-popup" role="dialog" aria-modal="true" aria-labelledby="result-popup-title" aria-hidden="true" hidden>
-      <h2 id="result-popup-title">💘 Cặp vừa quay xong!</h2>
+    </dialog>
+    <dialog id="result-popup" class="result-popup" aria-labelledby="result-popup-title" aria-describedby="result-popup-hint">
+      <h2 id="result-popup-title">Đã tìm được một cặp!</h2>
       <p id="result-popup-message" class="result-popup-message"></p>
       <p id="result-popup-pair" class="result-popup-pair"></p>
       <div class="result-popup-actions">
-        <button id="result-keep-btn" class="btn btn-primary" type="button">Giữ cặp này</button>
-        <button id="result-respin-btn" class="btn btn-secondary" type="button">Quay lại 1 lần</button>
+        <button id="result-keep-btn" class="btn btn-primary" type="button" autofocus>Giữ cặp này</button>
+        <button id="result-respin-btn" class="btn btn-secondary" type="button">Quay lại bạn nữ</button>
       </div>
       <p id="result-popup-hint" class="result-popup-hint"></p>
-    </aside>
-
+    </dialog>
     <script type="module" src="./app.js"></script>
   </body>
 </html>
