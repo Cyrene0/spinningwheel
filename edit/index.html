@@ -1,35 +1,51 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spinning Wheel Data Editor</title>
+    <meta name="theme-color" content="#763455" />
+    <title>Quản lý danh sách · Spinning Wheel</title>
     <link rel="stylesheet" href="./edit.css" />
   </head>
   <body>
     <main class="editor-shell">
       <header class="editor-header">
-        <h1>🔐 Data Editor</h1>
-        <p>Private page for editing <code>name</code>, <code>priority</code>, and <code>exclusiveID</code>.</p>
+        <a class="back-link" href="../">← Về vòng quay</a>
+        <p class="eyebrow">SPINNING WHEEL / DANH SÁCH</p>
+        <h1>Chuẩn bị cho lượt quay.</h1>
+        <p class="intro">Thêm, sửa và sắp xếp thông tin người tham gia trong một nơi.</p>
       </header>
 
-      <section class="card actions" aria-label="editor actions">
-        <button id="add-male" type="button">Add male row</button>
-        <button id="add-female" type="button">Add female row</button>
-        <button id="copy-json" type="button">Copy JSON</button>
-        <button id="download-json" type="button">Download students.json</button>
+      <section class="editor-toolbar" aria-label="Thao tác danh sách">
+        <div>
+          <p class="toolbar-title">Danh sách của bạn</p>
+          <p class="toolbar-note">Chỉnh sửa tại đây, tải về khi đã sẵn sàng.</p>
+        </div>
+        <div class="actions">
+          <button id="copy-json" type="button" disabled>Sao chép JSON</button>
+          <button id="download-json" class="primary-btn" type="button" disabled>Tải students.json ↓</button>
+        </div>
+        <p id="status" role="status" aria-live="polite">Đang tải danh sách…</p>
       </section>
 
-      <section class="card">
-        <h2>Male</h2>
-        <div class="table-wrap">
+      <aside class="editor-note" aria-label="Hướng dẫn lưu danh sách">
+        <strong>Nhớ lưu bản chỉnh sửa.</strong>
+        Trang này không tự ghi lên máy chủ. Tải tệp về rồi thay thế <code>data/students.json</code> trong dự án để vòng quay sử dụng danh sách mới.
+      </aside>
+
+      <section class="card" aria-labelledby="male-heading">
+        <div class="section-heading">
+          <h2 id="male-heading">Danh sách nam <span id="male-count" class="count">0</span></h2>
+          <button id="add-male" class="add-btn" type="button" disabled>+ Thêm người</button>
+        </div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng danh sách nam">
           <table id="male-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Priority</th>
-                <th>ExclusiveID</th>
-                <th>Action</th>
+                <th scope="col">Họ và tên</th>
+                <th scope="col">Ưu tiên</th>
+                <th scope="col">Mã ghép riêng</th>
+                <th scope="col"><span class="sr-only">Thao tác</span></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -37,16 +53,19 @@
         </div>
       </section>
 
-      <section class="card">
-        <h2>Female</h2>
-        <div class="table-wrap">
+      <section class="card" aria-labelledby="female-heading">
+        <div class="section-heading">
+          <h2 id="female-heading">Danh sách nữ <span id="female-count" class="count">0</span></h2>
+          <button id="add-female" class="add-btn" type="button" disabled>+ Thêm người</button>
+        </div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng danh sách nữ">
           <table id="female-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Priority</th>
-                <th>ExclusiveID</th>
-                <th>Action</th>
+                <th scope="col">Họ và tên</th>
+                <th scope="col">Ưu tiên</th>
+                <th scope="col">Mã ghép riêng</th>
+                <th scope="col"><span class="sr-only">Thao tác</span></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -54,11 +73,20 @@
         </div>
       </section>
 
-      <section class="card">
-        <h2>Preview JSON</h2>
-        <textarea id="json-preview" rows="14" readonly></textarea>
-        <p id="status" role="status" aria-live="polite"></p>
+      <p id="field-help" class="field-help">Để trống <strong>Ưu tiên</strong> để hệ thống tự chọn. Hai người có cùng <strong>Mã ghép riêng</strong> chỉ được ghép với nhau; để trống nếu không cần ràng buộc.</p>
+
+      <section class="card preview-card" aria-labelledby="preview-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TỆP XUẤT</p>
+            <h2 id="preview-heading">Xem trước JSON</h2>
+          </div>
+          <span class="file-badge">students.json</span>
+        </div>
+        <label class="sr-only" for="json-preview">Nội dung JSON được tạo từ danh sách</label>
+        <textarea id="json-preview" rows="12" readonly spellcheck="false"></textarea>
       </section>
+      <footer>Spinning Wheel <span aria-hidden="true">·</span> Sẵn sàng cho những cặp đôi bất ngờ.</footer>
     </main>
 
     <script type="module" src="./edit.js"></script>
