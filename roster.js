@@ -6,6 +6,12 @@ export function validateRoster(data) {
   }
 
   const roster = {};
+  if (data.className !== undefined) {
+    if (typeof data.className !== "string") {
+      throw new Error("Tên lớp phải là chuỗi ký tự.");
+    }
+    if (data.className.trim()) roster.className = data.className.trim();
+  }
   for (const [group, label] of [["male", "nam"], ["female", "nữ"]]) {
     if (!Array.isArray(data[group])) {
       throw new Error(`Danh sách bạn ${label} phải là một mảng.`);
