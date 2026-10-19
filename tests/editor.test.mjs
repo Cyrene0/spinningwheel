@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
+import { validateRoster } from "../roster.js";
 
-const source = await readFile(new URL("../edit/edit.js", import.meta.url), "utf8");
+const source = (await readFile(new URL("../edit/edit.js", import.meta.url), "utf8"))
+  .replace(/^import[^\n]+\n/, "");
 const roster = JSON.parse(await readFile(new URL("../data/students.json", import.meta.url), "utf8"));
 
 function editor() {
   const elements = new Map();
+  let savedRoster = null;
+  let navigation = null;
   const context = vm.createContext({
     document: {
       getElementById(id) {
@@ -20,16 +24,22 @@ function editor() {
     },
     // Keep automatic startup pending; each test controls loading explicitly.
     fetch: () => new Promise(() => {}),
+    validateRoster,
+    getSavedRoster: () => null,
+    saveRoster: (data) => { savedRoster = validateRoster(data); },
+    clearSavedRoster() {},
+    window: { location: { assign: (path) => { navigation = path; } }, confirm: () => false },
     invalidInput: null,
   });
   vm.runInContext(source, context);
-  return { context, elements, run: (code) => vm.runInContext(code, context) };
+  return { context, elements, saved: () => savedRoster, navigation: () => navigation,
+    run: (code) => vm.runInContext(code, context) };
 }
 
 test("existing roster round-trips with all names, priorities and exclusive IDs", () => {
   const { context, run } = editor();
   context.roster = roster;
-  const result = JSON.parse(run("JSON.stringify({ male: roster.male.map(normalizeEntry).map(compactEntry), female: roster.female.map(normalizeEntry).map(compactEntry) })"));
+  const result = JSON.parse(run("JSON.stringify({ className: roster.className, male: roster.male.map(normalizeEntry).map(compactEntry), female: roster.female.map(normalizeEntry).map(compactEntry) })"));
   assert.deepEqual(result, roster);
 });
 
@@ -71,5 +81,35 @@ test("failed or malformed loading cannot enable exports or replace the roster", 
   assert.equal(elements.get("download-json").disabled, true);
   assert.equal(elements.get("add-male").disabled, true);
   assert.equal(run("state.loaded"), false);
-  assert.match(elements.get("status").textContent, /hai mảng male và female/);
+  assert.match(elements.get("status").textContent, /Danh sách bạn nam|Danh sách bạn nữ/);
+});
+
+test("apply saves the class and complete roster before opening the spinner", () => {
+  const fixture = editor();
+  fixture.context.roster = roster;
+  fixture.run("state.className = roster.className; state.male = roster.male; state.female = roster.female; state.loaded = true; applyRoster()");
+  assert.deepEqual(fixture.saved(), roster);
+  assert.equal(fixture.navigation(), "../");
+});
+
+test("failed local save keeps edits and does not navigate away", () => {
+  const fixture = editor();
+  fixture.context.saveRoster = () => { throw new Error("Storage blocked"); };
+  fixture.run('state.loaded = true; state.male = [{name:"An"}]; state.female = [{name:"Bình"}]; applyRoster()');
+  assert.equal(fixture.navigation(), null);
+  assert.match(fixture.elements.get("status").textContent, /Storage blocked/);
+  assert.equal(fixture.run("state.male[0].name"), "An");
+});
+
+test("restoring defaults cannot clear a saved roster when fetching fails", async () => {
+  const fixture = editor();
+  let cleared = false;
+  fixture.context.window.confirm = () => true;
+  fixture.context.clearSavedRoster = () => { cleared = true; };
+  fixture.context.fetch = async () => ({ ok: false, status: 503 });
+  fixture.run('state.loaded = true; state.className = "8A1"; state.male = [{name:"An"}]');
+  await fixture.context.restoreDefaultRoster();
+  assert.equal(cleared, false);
+  assert.equal(fixture.run("state.male[0].name"), "An");
+  assert.match(fixture.elements.get("status").textContent, /vẫn được giữ nguyên/);
 });
