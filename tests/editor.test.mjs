@@ -76,7 +76,7 @@ test("exports remain disabled until loaded and while an input is invalid", () =>
 
 test("failed or malformed loading cannot enable exports or replace the roster", async () => {
   const { context, elements, run } = editor();
-  context.fetch = async () => ({ ok: true, json: async () => ({ male: [], female: "invalid" }) });
+  context.fetch = async () => ({ ok: true, json: async () => ({ male: [{ name: "An" }], female: "invalid" }) });
   await context.init();
   assert.equal(elements.get("download-json").disabled, true);
   assert.equal(elements.get("add-male").disabled, true);
