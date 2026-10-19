@@ -1,35 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spinning Wheel Data Editor</title>
+    <meta name="theme-color" content="#763455" />
+    <title>Danh sách lớp 8A1 · Vòng quay màu hồng</title>
     <link rel="stylesheet" href="./edit.css" />
   </head>
   <body>
     <main class="editor-shell">
       <header class="editor-header">
-        <h1>🔐 Data Editor</h1>
-        <p>Private page for editing <code>name</code>, <code>priority</code>, and <code>exclusiveID</code>.</p>
+        <a class="back-link" href="../">← Về vòng quay</a>
+        <h1>Danh sách lớp</h1>
       </header>
 
-      <section class="card actions" aria-label="editor actions">
-        <button id="add-male" type="button">Add male row</button>
-        <button id="add-female" type="button">Add female row</button>
-        <button id="copy-json" type="button">Copy JSON</button>
-        <button id="download-json" type="button">Download students.json</button>
+      <section class="editor-toolbar" aria-label="Thao tác danh sách">
+        <div class="actions">
+          <button id="copy-json" type="button" disabled>Sao chép JSON</button>
+          <button id="download-json" class="primary-btn" type="button" disabled>Tải JSON</button>
+        </div>
+        <p id="status" role="status" aria-live="polite">Đang tải danh sách…</p>
       </section>
 
-      <section class="card">
-        <h2>Male</h2>
-        <div class="table-wrap">
+      <aside class="editor-note" aria-label="Hướng dẫn lưu danh sách">
+        Vòng quay dùng file <code>data/students.json</code> trên GitHub. Sửa xong, tải JSON rồi thay file đó trong dự án.
+      </aside>
+
+      <section class="roster-options" aria-label="Thông tin lớp">
+        <div class="class-field">
+          <label for="class-name-input">Tên lớp</label>
+          <input id="class-name-input" type="text" maxlength="60" placeholder="Ví dụ: 8A1" disabled />
+        </div>
+      </section>
+      <section class="card" aria-labelledby="male-heading">
+        <div class="section-heading">
+          <h2 id="male-heading">Danh sách nam <span id="male-count" class="count">0</span></h2>
+          <button id="add-male" class="add-btn" type="button" disabled>+ Thêm người</button>
+        </div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng danh sách nam">
           <table id="male-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Priority</th>
-                <th>ExclusiveID</th>
-                <th>Action</th>
+                <th scope="col">Họ và tên</th>
+                <th scope="col">Ưu tiên</th>
+                <th scope="col">Mã ghép riêng</th>
+                <th scope="col"><span class="sr-only">Thao tác</span></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -37,16 +52,19 @@
         </div>
       </section>
 
-      <section class="card">
-        <h2>Female</h2>
-        <div class="table-wrap">
+      <section class="card" aria-labelledby="female-heading">
+        <div class="section-heading">
+          <h2 id="female-heading">Danh sách nữ <span id="female-count" class="count">0</span></h2>
+          <button id="add-female" class="add-btn" type="button" disabled>+ Thêm người</button>
+        </div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng danh sách nữ">
           <table id="female-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Priority</th>
-                <th>ExclusiveID</th>
-                <th>Action</th>
+                <th scope="col">Họ và tên</th>
+                <th scope="col">Ưu tiên</th>
+                <th scope="col">Mã ghép riêng</th>
+                <th scope="col"><span class="sr-only">Thao tác</span></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -54,10 +72,17 @@
         </div>
       </section>
 
-      <section class="card">
-        <h2>Preview JSON</h2>
-        <textarea id="json-preview" rows="14" readonly></textarea>
-        <p id="status" role="status" aria-live="polite"></p>
+      <p id="field-help" class="field-help">Để trống <strong>Ưu tiên</strong> để hệ thống tự chọn. Bạn có <strong>Mã ghép riêng</strong> chỉ được ghép với người có cùng mã; để trống nếu không cần ràng buộc.</p>
+
+      <section class="card preview-card" aria-labelledby="preview-heading">
+        <div class="section-heading">
+          <div>
+            <h2 id="preview-heading">Xem trước JSON</h2>
+          </div>
+          <span class="file-badge">students.json</span>
+        </div>
+        <label class="sr-only" for="json-preview">Nội dung JSON được tạo từ danh sách</label>
+        <textarea id="json-preview" rows="12" readonly spellcheck="false"></textarea>
       </section>
     </main>
 

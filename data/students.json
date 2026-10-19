@@ -1,4 +1,5 @@
 {
+  "className": "8A1",
   "male": [
     {
       "name": "Nguyễn Phong Anh"
@@ -171,6 +172,9 @@
     },
     {
       "name": "Hoàng Tuệ Lâm"
+    },
+    {
+      "name": "Nguyễn Gia Linh"
     }
   ]
 }
