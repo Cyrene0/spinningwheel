@@ -5,6 +5,7 @@ const state = {
   male: [],
   female: [],
   loaded: false,
+  restoring: false,
 };
 
 const elements = {
@@ -69,7 +70,7 @@ function renderJsonPreview() {
   const invalidInput = document.querySelector("tbody input:invalid");
   elements.copyJsonBtn.disabled = !state.loaded || Boolean(invalidInput);
   elements.downloadJsonBtn.disabled = !state.loaded || Boolean(invalidInput);
-  elements.applyRosterBtn.disabled = !state.loaded || Boolean(invalidInput);
+  elements.applyRosterBtn.disabled = !state.loaded || state.restoring || Boolean(invalidInput);
   return !invalidInput;
 }
 
@@ -137,6 +138,7 @@ function createRow(group, row, index) {
   removeBtn.setAttribute("aria-label", `Xóa ${row.name || rowLabel}`);
   removeBtn.className = "remove-btn";
   removeBtn.addEventListener("click", () => {
+    if (state.restoring) return;
     state[group].splice(index, 1);
     renderTable(group);
     renderJsonPreview();
@@ -176,6 +178,7 @@ function renderTable(group) {
 }
 
 function addRow(group) {
+  if (!state.loaded || state.restoring) return;
   state[group].push({ name: "", priority: undefined, exclusiveID: undefined });
   renderTable(group);
   renderJsonPreview();
@@ -185,7 +188,7 @@ function addRow(group) {
 }
 
 async function copyJsonToClipboard() {
-  if (!state.loaded || !renderJsonPreview()) return;
+  if (!state.loaded || state.restoring || !renderJsonPreview()) return;
   try {
     await navigator.clipboard.writeText(elements.jsonPreview.value);
     setStatus("Đã sao chép JSON. Dán nội dung vào data/students.json để cập nhật danh sách.");
@@ -197,7 +200,7 @@ async function copyJsonToClipboard() {
 }
 
 function downloadJson() {
-  if (!state.loaded || !renderJsonPreview()) return;
+  if (!state.loaded || state.restoring || !renderJsonPreview()) return;
   const blob = new Blob([elements.jsonPreview.value], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -249,7 +252,7 @@ async function loadDefaultRoster() {
 }
 
 function applyRoster() {
-  if (!state.loaded || !renderJsonPreview()) return;
+  if (!state.loaded || state.restoring || !renderJsonPreview()) return;
   try {
     saveRoster(snapshot());
     window.location.assign("../");
@@ -259,7 +262,10 @@ function applyRoster() {
 }
 
 async function restoreDefaultRoster() {
-  if (!state.loaded || !window.confirm("Dùng lại danh sách gốc? Hãy tải JSON trước nếu muốn giữ các chỉnh sửa hiện tại.")) return;
+  if (!state.loaded || state.restoring || !window.confirm("Dùng lại danh sách gốc? Hãy tải JSON trước nếu muốn giữ các chỉnh sửa hiện tại.")) return;
+  state.restoring = true;
+  document.querySelectorAll("input, button").forEach((element) => { element.disabled = true; });
+  setStatus("Đang khôi phục danh sách gốc…");
   try {
     // Fetch before clearing storage so a network error cannot discard the saved roster.
     const data = await loadDefaultRoster();
@@ -275,6 +281,10 @@ async function restoreDefaultRoster() {
     setStatus("Đã khôi phục danh sách gốc. Chọn “Áp dụng và mở vòng quay” để bắt đầu.");
   } catch (error) {
     setStatus(error.message + " Danh sách hiện tại vẫn được giữ nguyên.");
+  } finally {
+    state.restoring = false;
+    document.querySelectorAll("input, button").forEach((element) => { element.disabled = false; });
+    renderJsonPreview();
   }
 }
 
