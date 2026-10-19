@@ -16,7 +16,7 @@ import {
 } from "./pairing.js";
 import { Wheel, wheelRotationForWinner } from "./wheel.js";
 import { createElements, createUiController, renderResult, renderStatus } from "./ui.js";
-import { getSavedRoster, validateRoster } from "./roster.js";
+import { validateRoster } from "./roster.js";
 
 const state = {
   allMale: [],
@@ -359,24 +359,13 @@ function resetPools() {
 
 async function init() {
   try {
-    let data;
-    let storageMessage = "";
-    try {
-      data = getSavedRoster();
-    } catch (error) {
-      storageMessage = error.message + " Đang dùng danh sách gốc.";
+    const response = await fetch("./data/students.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Không tải được danh sách lớp (mã ${response.status}).`);
     }
-    if (!data) {
-      const response = await fetch("./data/students.json");
-      if (!response.ok) {
-        throw new Error(`Không tải được danh sách lớp (mã ${response.status}).`);
-      }
-      data = validateRoster(await response.json());
-    }
+    const data = validateRoster(await response.json());
     elements.className.textContent = data.className ? `Lớp ${data.className}` : "";
     document.title = `Vòng quay màu hồng${data.className ? " · Lớp " + data.className : ""}`;
-    elements.rosterStatus.textContent = storageMessage ? "Không mở được danh sách đã lưu. Tạm dùng danh sách gốc." : "";
-    elements.rosterStatus.hidden = !elements.rosterStatus.textContent;
     state.allMale = normalizeGroup(data.male, "male");
     state.allFemale = normalizeGroup(data.female, "female");
     if (!refillPool(state.allMale).length || !refillPool(state.allFemale).length) {
