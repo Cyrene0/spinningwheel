@@ -75,6 +75,7 @@ const ui = createUiController(elements, {
   },
   setAllowRespin: (allowRespin) => {
     state.settings.allowRespin = allowRespin;
+    renderStatus(elements, state);
 
     if (!state.pendingSpin) {
       return;
