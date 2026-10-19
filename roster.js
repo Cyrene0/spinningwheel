@@ -1,5 +1,3 @@
-export const ROSTER_STORAGE_KEY = "pairSpinner.roster.v1";
-
 export function validateRoster(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("Danh sách lớp phải là đối tượng có hai nhóm nam và nữ.");
@@ -45,44 +43,4 @@ export function validateRoster(data) {
     }
   }
   return roster;
-}
-
-export function getSavedRoster(storage) {
-  let saved;
-  try {
-    saved = (storage ?? globalThis.localStorage).getItem(ROSTER_STORAGE_KEY);
-  } catch {
-    throw new Error("Không thể đọc danh sách đã lưu trong trình duyệt.");
-  }
-  if (saved === null) return null;
-
-  try {
-    return validateRoster(JSON.parse(saved));
-  } catch (error) {
-    throw new Error(`Danh sách đã lưu không hợp lệ. Hãy khôi phục danh sách gốc. ${error.message}`);
-  }
-}
-
-export function saveRoster(data, storage) {
-  const roster = validateRoster(data);
-  let serialized;
-  try {
-    serialized = JSON.stringify(roster);
-  } catch {
-    throw new Error("Danh sách lớp không thể chuyển thành JSON hợp lệ.");
-  }
-  try {
-    (storage ?? globalThis.localStorage).setItem(ROSTER_STORAGE_KEY, serialized);
-  } catch {
-    throw new Error("Không thể lưu danh sách trong trình duyệt. Hãy kiểm tra quyền lưu trữ hoặc dung lượng trống.");
-  }
-  return roster;
-}
-
-export function clearSavedRoster(storage) {
-  try {
-    (storage ?? globalThis.localStorage).removeItem(ROSTER_STORAGE_KEY);
-  } catch {
-    throw new Error("Không thể khôi phục danh sách gốc vì trình duyệt chặn xóa dữ liệu đã lưu.");
-  }
 }
