@@ -98,6 +98,7 @@ function createCellInput(type, value, label) {
     input.setAttribute("aria-describedby", "field-help");
   } else {
     input.required = true;
+    input.setCustomValidity(input.value.trim() ? "" : "Vui lòng nhập họ và tên.");
   }
   return input;
 }
