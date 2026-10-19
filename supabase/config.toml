@@ -1,0 +1,2 @@
+[functions.roster-editor]
+verify_jwt = false

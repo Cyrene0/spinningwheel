@@ -1,10 +1,13 @@
 import { validateRoster } from "../roster.js";
+import { computeBlobSha, saveRosterToGitHub } from "./github-save.js";
 
 const state = {
   className: "",
   male: [],
   female: [],
   loaded: false,
+  baseSha: "",
+  saving: false,
 };
 
 const elements = {
@@ -19,6 +22,14 @@ const elements = {
   maleCount: document.getElementById("male-count"),
   femaleCount: document.getElementById("female-count"),
   classNameInput: document.getElementById("class-name-input"),
+  saveBtn: document.getElementById("save-roster"),
+  saveDialog: document.getElementById("save-dialog"),
+  saveForm: document.getElementById("save-form"),
+  passwordInput: document.getElementById("save-password"),
+  confirmSaveBtn: document.getElementById("confirm-save"),
+  cancelSaveBtn: document.getElementById("cancel-save"),
+  saveError: document.getElementById("save-error"),
+  backLink: document.querySelector(".back-link"),
 };
 
 function toOptionalNumber(value) {
@@ -65,8 +76,10 @@ function snapshot() {
 function renderJsonPreview() {
   elements.jsonPreview.value = JSON.stringify(snapshot(), null, 2);
   const invalidInput = document.querySelector("tbody input:invalid");
-  elements.copyJsonBtn.disabled = !state.loaded || Boolean(invalidInput);
-  elements.downloadJsonBtn.disabled = !state.loaded || Boolean(invalidInput);
+  const disabled = !state.loaded || state.saving || Boolean(invalidInput);
+  elements.copyJsonBtn.disabled = disabled;
+  elements.downloadJsonBtn.disabled = disabled;
+  elements.saveBtn.disabled = disabled;
   return !invalidInput;
 }
 
@@ -76,6 +89,7 @@ function setStatus(message) {
 
 function bindInput(input, onChange) {
   input.addEventListener("input", (event) => {
+    if (state.saving) return;
     onChange(event.target.value);
     input.setAttribute("aria-invalid", String(!input.validity.valid));
     setStatus(renderJsonPreview()
@@ -134,13 +148,14 @@ function createRow(group, row, index) {
   removeBtn.setAttribute("aria-label", `Xóa ${row.name || rowLabel}`);
   removeBtn.className = "remove-btn";
   removeBtn.addEventListener("click", () => {
+    if (state.saving) return;
     state[group].splice(index, 1);
     renderTable(group);
     renderJsonPreview();
     const tbody = group === "male" ? elements.maleTbody : elements.femaleTbody;
     const nextRow = tbody.children[Math.min(index, state[group].length - 1)];
     (nextRow?.querySelector("button") ?? (group === "male" ? elements.addMaleBtn : elements.addFemaleBtn)).focus();
-    setStatus("Đã xóa một người. Tải tệp để lưu danh sách mới.");
+    setStatus("Có thay đổi chưa lưu.");
   });
 
   nameTd.append(nameInput);
@@ -173,7 +188,7 @@ function renderTable(group) {
 }
 
 function addRow(group) {
-  if (!state.loaded) return;
+  if (!state.loaded || state.saving) return;
   state[group].push({ name: "", priority: undefined, exclusiveID: undefined });
   renderTable(group);
   renderJsonPreview();
@@ -183,7 +198,7 @@ function addRow(group) {
 }
 
 async function copyJsonToClipboard() {
-  if (!state.loaded || !renderJsonPreview()) return;
+  if (!state.loaded || state.saving || !renderJsonPreview()) return;
   try {
     await navigator.clipboard.writeText(elements.jsonPreview.value);
     setStatus("Đã sao chép JSON.");
@@ -195,7 +210,7 @@ async function copyJsonToClipboard() {
 }
 
 function downloadJson() {
-  if (!state.loaded || !renderJsonPreview()) return;
+  if (!state.loaded || state.saving || !renderJsonPreview()) return;
   const blob = new Blob([elements.jsonPreview.value], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -208,7 +223,7 @@ function downloadJson() {
 
 async function init() {
   try {
-    const data = await loadDefaultRoster();
+    const { roster: data, sha } = await loadDefaultRoster();
     state.className = data.className ?? "";
     elements.classNameInput.value = state.className;
     document.title = `Danh sách${state.className ? " lớp " + state.className : ""} · Vòng quay màu hồng`;
@@ -216,6 +231,7 @@ async function init() {
     const female = data.female.map(normalizeEntry);
     state.male = male;
     state.female = female;
+    state.baseSha = sha;
     state.loaded = true;
     for (const element of [elements.addMaleBtn, elements.addFemaleBtn, elements.classNameInput]) {
       element.disabled = false;
@@ -235,13 +251,92 @@ async function loadDefaultRoster() {
   if (!response.ok) {
     throw new Error(`Không tải được danh sách gốc (HTTP ${response.status}). Thử tải lại trang.`);
   }
-  return validateRoster(await response.json());
+  const text = await response.text();
+  const roster = validateRoster(JSON.parse(text));
+  const sha = await computeBlobSha(text);
+  return { roster, sha };
+}
+
+function setSaving(saving) {
+  state.saving = saving;
+  for (const input of document.querySelectorAll("tbody input, tbody button")) input.disabled = saving;
+  for (const control of [elements.addMaleBtn, elements.addFemaleBtn, elements.classNameInput]) {
+    control.disabled = !state.loaded || saving;
+  }
+  for (const control of [elements.passwordInput, elements.confirmSaveBtn, elements.cancelSaveBtn, elements.jsonPreview]) {
+    control.disabled = saving;
+  }
+  elements.backLink.setAttribute("aria-disabled", String(saving));
+  elements.saveDialog.setAttribute("aria-busy", String(saving));
+  elements.confirmSaveBtn.textContent = saving ? "Đang lưu…" : "Lưu";
+  renderJsonPreview();
+}
+
+function openSaveDialog() {
+  if (!state.loaded || state.saving || !renderJsonPreview()) return;
+  try {
+    validateRoster(snapshot());
+  } catch (error) {
+    setStatus(error.message);
+    return;
+  }
+  elements.passwordInput.value = "";
+  elements.saveError.textContent = "";
+  elements.saveDialog.showModal();
+  elements.passwordInput.focus();
+}
+
+async function saveRoster() {
+  if (!state.loaded || state.saving || !elements.passwordInput.value || !renderJsonPreview()) return;
+  let roster;
+  try {
+    roster = validateRoster(snapshot());
+  } catch (error) {
+    elements.saveError.textContent = error.message;
+    return;
+  }
+  const request = { password: elements.passwordInput.value, sha: state.baseSha, roster };
+  elements.passwordInput.value = "";
+  elements.saveError.textContent = "";
+  setSaving(true);
+  try {
+    const result = await saveRosterToGitHub(request);
+    state.baseSha = result.sha;
+    elements.saveDialog.close();
+    setStatus("Đã lưu. Chờ trang cập nhật.");
+  } catch (error) {
+    elements.saveError.textContent = error.message;
+    setStatus(error.message);
+  } finally {
+    request.password = "";
+    elements.passwordInput.value = "";
+    setSaving(false);
+    if (elements.saveDialog.open) elements.passwordInput.focus();
+  }
 }
 
 elements.addMaleBtn.addEventListener("click", () => addRow("male"));
 elements.addFemaleBtn.addEventListener("click", () => addRow("female"));
 elements.copyJsonBtn.addEventListener("click", copyJsonToClipboard);
 elements.downloadJsonBtn.addEventListener("click", downloadJson);
+elements.saveBtn.addEventListener("click", openSaveDialog);
+elements.saveForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveRoster();
+});
+elements.cancelSaveBtn.addEventListener("click", () => {
+  if (state.saving) return;
+  elements.passwordInput.value = "";
+  elements.saveDialog.close();
+});
+elements.saveDialog.addEventListener("cancel", (event) => {
+  if (state.saving) event.preventDefault();
+  else elements.passwordInput.value = "";
+});
+elements.saveDialog.addEventListener("close", () => { elements.passwordInput.value = ""; });
+elements.backLink.addEventListener("click", (event) => {
+  if (state.saving) event.preventDefault();
+});
 bindInput(elements.classNameInput, (value) => { state.className = value; });
 
 init();
