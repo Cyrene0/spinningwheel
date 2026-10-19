@@ -5,12 +5,14 @@ import vm from "node:vm";
 import { CONFIG } from "../config.js";
 import * as pairing from "../pairing.js";
 import { Wheel, wheelRotationForWinner } from "../wheel.js";
+import { validateRoster } from "../roster.js";
 
 const source = (await readFile(new URL("../app.js", import.meta.url), "utf8"))
   .replace(/^import[\s\S]*?;\n/gm, "")
   .replace(/\ninit\(\);\s*$/, "");
 
-function createApp() {
+function createApp({ sourceRoster = null } = {}) {
+  const requests = [];
   const nodes = new Map();
   const elements = new Proxy({}, {
     get(_, key) {
@@ -53,10 +55,19 @@ function createApp() {
     applyTheme: (base) => ({ base }), createWheelPalettes: () => ({ male: ["#fff"], female: ["#fff"] }),
     getStoredThemeBaseColor: () => null, getThemeColor: (_, fallback) => fallback, storeThemeBaseColor() {},
     window: { matchMedia: () => ({ matches: true }) },
+    document: { title: "" },
+    validateRoster,
+    localStorage: { getItem() { throw new Error("Roster must use the project JSON"); } },
+    fetch: async (url, options) => {
+      requests.push({ url, cache: options.cache });
+      if (!sourceRoster) throw new Error("Unexpected roster fetch");
+      return { ok: true, json: async () => sourceRoster };
+    },
   });
-  vm.runInContext(source + "\nglobalThis.app = { state, maleWheel, femaleWheel, spinBoth, startNewRound, resetPools, renderAll, applyAndRenderTheme };", context);
+  vm.runInContext(source + "\nglobalThis.app = { state, maleWheel, femaleWheel, spinBoth, startNewRound, resetPools, renderAll, applyAndRenderTheme, init };", context);
   const app = context.app;
   app.elements = elements;
+  app.requests = requests;
   for (const group of ["Male", "Female"]) {
     app.state[`all${group}`] = pairing.normalizeGroup(Array.from({ length: 4 }, (_, id) => ({
       id: `${group}-${id}`, name: `${group} ${id}`, priority: 0,
@@ -66,6 +77,24 @@ function createApp() {
   app.state.loading = false;
   return app;
 }
+
+test("the project JSON supplies the participants and class name", async () => {
+  const data = { className: "8A1", male: [{name:"An"}], female: [{name:"Nguyễn Gia Linh"}] };
+  const app = createApp({ sourceRoster: data });
+  await app.init();
+  assert.equal(app.state.allFemale[0].name, "Nguyễn Gia Linh");
+  assert.equal(app.elements.className.textContent, "Lớp 8A1");
+  assert.deepEqual(app.requests, [{ url: "./data/students.json", cache: "no-store" }]);
+  assert.equal(app.state.loading, false);
+});
+
+test("a failed JSON fetch blocks spinning instead of using a browser roster", async () => {
+  const app = createApp();
+  await app.init();
+  assert.equal(app.elements.spinBtn.disabled, true);
+  assert.equal(app.elements.resetBtn.disabled, true);
+  assert.match(app.elements.pairResult.textContent, /Không thể bắt đầu/);
+});
 
 function assertDisplayedWinners(app) {
   assert.equal(app.maleWheel.getEntryAtPointer(app.maleWheel.displayed), app.state.current.male);
