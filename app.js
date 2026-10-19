@@ -16,6 +16,7 @@ import {
 } from "./pairing.js";
 import { Wheel, wheelRotationForWinner } from "./wheel.js";
 import { createElements, createUiController, renderResult, renderStatus } from "./ui.js";
+import { getSavedRoster, validateRoster } from "./roster.js";
 
 const state = {
   allMale: [],
@@ -38,13 +39,6 @@ const state = {
   theme: null,
   pendingSpin: null,
 };
-
-const FUNNY_SPIN_MESSAGES = [
-  "✨ Một món quà nhỏ, một niềm vui thật to.",
-  "🎉 Hai cái tên đã được chọn. Cùng chuẩn bị món quà nhé!",
-  "🫶 Thêm một cặp bạn, thêm một kỷ niệm ngày 8/3.",
-  "🎁 Đến lượt trao gửi một lời chúc thật dễ thương.",
-];
 
 const elements = createElements();
 
@@ -169,10 +163,6 @@ function updateLiveSpinLabel(element, candidate) {
   element.title = candidate?.name ?? "";
 }
 
-function randomFunnyMessage() {
-  return FUNNY_SPIN_MESSAGES[Math.floor(Math.random() * FUNNY_SPIN_MESSAGES.length)];
-}
-
 function toggleResultPopup(open) {
   if (open && !elements.resultPopup.open) elements.resultPopup.showModal();
   if (!open && elements.resultPopup.open) elements.resultPopup.close();
@@ -223,16 +213,15 @@ function showSpinDecisionPopup() {
   const { picked, respinUsed } = state.pendingSpin;
   const pairText = `${picked.pair.male.name} + ${picked.pair.female.name}`;
   elements.resultPopupPair.textContent = pairText;
-  elements.resultPopupMessage.textContent = randomFunnyMessage();
 
   if (!state.settings.allowRespin) {
-    elements.resultPopupHint.textContent = "Đã tắt tính năng quay lại trong phần cài đặt.";
+    elements.resultPopupHint.textContent = "Đã tắt quay lại.";
     elements.resultRespinBtn.disabled = true;
   } else if (respinUsed) {
-    elements.resultPopupHint.textContent = "Đã dùng lượt quay lại. Nhấn “Giữ cặp này” để xác nhận.";
+    elements.resultPopupHint.textContent = "Đã hết lượt quay lại.";
     elements.resultRespinBtn.disabled = true;
   } else {
-    elements.resultPopupHint.textContent = "Giữ bạn nam, quay lại bạn nữ tối đa một lần. Nhấn Esc để giữ cặp.";
+    elements.resultPopupHint.textContent = "Được quay lại bạn nữ 1 lần.";
     elements.resultRespinBtn.disabled = false;
   }
 
@@ -370,12 +359,24 @@ function resetPools() {
 
 async function init() {
   try {
-    const response = await fetch("./data/students.json");
-    if (!response.ok) {
-      throw new Error(`Không tải được danh sách lớp (mã ${response.status}).`);
+    let data;
+    let storageMessage = "";
+    try {
+      data = getSavedRoster();
+    } catch (error) {
+      storageMessage = error.message + " Đang dùng danh sách gốc.";
     }
-
-    const data = await response.json();
+    if (!data) {
+      const response = await fetch("./data/students.json");
+      if (!response.ok) {
+        throw new Error(`Không tải được danh sách lớp (mã ${response.status}).`);
+      }
+      data = validateRoster(await response.json());
+    }
+    elements.className.textContent = data.className ? `Lớp ${data.className}` : "";
+    document.title = `Vòng quay màu hồng${data.className ? " · Lớp " + data.className : ""}`;
+    elements.rosterStatus.textContent = storageMessage ? "Không mở được danh sách đã lưu. Tạm dùng danh sách gốc." : "";
+    elements.rosterStatus.hidden = !elements.rosterStatus.textContent;
     state.allMale = normalizeGroup(data.male, "male");
     state.allFemale = normalizeGroup(data.female, "female");
     if (!refillPool(state.allMale).length || !refillPool(state.allFemale).length) {
