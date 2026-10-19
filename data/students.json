@@ -41,17 +41,10 @@
       "name": "Nguyễn Nhật Minh"
     },
     {
-      "name": "Chu Bảo Nam",
-      "priority": 3,
-      "exclusiveID": 1001
-    },
-    {
       "name": "Hoàng Hải Nam"
     },
     {
-      "name": "Trần Ngọc Hải Nam",
-      "priority": 22,
-      "exclusiveID": 1002
+      "name": "Trần Ngọc Hải Nam"
     },
     {
       "name": "Đặng Đình Nghĩa"
@@ -70,6 +63,9 @@
     },
     {
       "name": "Phạm Quốc Bảo"
+    },
+    {
+      "name": "Chu Bảo Nam"
     }
   ],
   "female": [
@@ -95,9 +91,7 @@
       "name": "Trần Mai Anh"
     },
     {
-      "name": "Vũ Minh Châu",
-      "priority": 3,
-      "exclusiveID": 1001
+      "name": "Vũ Minh Châu"
     },
     {
       "name": "Lê Khánh Chi"
@@ -160,9 +154,7 @@
       "name": "Nguyễn Minh Hà"
     },
     {
-      "name": "Trần Ngọc Minh",
-      "priority": 22,
-      "exclusiveID": 1002
+      "name": "Trần Ngọc Minh"
     },
     {
       "name": "Hồ Bảo Trân"
