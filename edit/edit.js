@@ -1,4 +1,7 @@
+import { getSavedRoster, saveRoster, clearSavedRoster, validateRoster } from "../roster.js";
+
 const state = {
+  className: "",
   male: [],
   female: [],
   loaded: false,
@@ -15,6 +18,9 @@ const elements = {
   status: document.getElementById("status"),
   maleCount: document.getElementById("male-count"),
   femaleCount: document.getElementById("female-count"),
+  classNameInput: document.getElementById("class-name-input"),
+  applyRosterBtn: document.getElementById("apply-roster"),
+  restoreRosterBtn: document.getElementById("restore-roster"),
 };
 
 function toOptionalNumber(value) {
@@ -52,6 +58,7 @@ function compactEntry(entry) {
 
 function snapshot() {
   return {
+    ...(state.className.trim() ? { className: state.className.trim() } : {}),
     male: state.male.map(compactEntry),
     female: state.female.map(compactEntry),
   };
@@ -62,6 +69,7 @@ function renderJsonPreview() {
   const invalidInput = document.querySelector("tbody input:invalid");
   elements.copyJsonBtn.disabled = !state.loaded || Boolean(invalidInput);
   elements.downloadJsonBtn.disabled = !state.loaded || Boolean(invalidInput);
+  elements.applyRosterBtn.disabled = !state.loaded || Boolean(invalidInput);
   return !invalidInput;
 }
 
@@ -74,7 +82,7 @@ function bindInput(input, onChange) {
     onChange(event.target.value);
     input.setAttribute("aria-invalid", String(!input.validity.valid));
     setStatus(renderJsonPreview()
-      ? "Có thay đổi chưa lưu. Tải tệp hoặc sao chép JSON để giữ lại bản chỉnh sửa."
+      ? "Có thay đổi chưa áp dụng. Chọn “Áp dụng và mở vòng quay” để dùng danh sách mới."
       : "Hãy điền đủ họ tên và kiểm tra các ô số trước khi xuất danh sách.");
   });
 }
@@ -202,29 +210,71 @@ function downloadJson() {
 
 async function init() {
   try {
-    const response = await fetch("../data/students.json");
-    if (!response.ok) {
-      throw new Error(`Không tải được danh sách (HTTP ${response.status}). Thử tải lại trang.`);
+    let data;
+    let storageMessage = "";
+    try {
+      data = getSavedRoster();
+    } catch (error) {
+      storageMessage = error.message + " Đang mở danh sách gốc.";
     }
-
-    const data = await response.json();
-    if (!Array.isArray(data?.male) || !Array.isArray(data?.female)) {
-      throw new Error("Tệp danh sách phải có hai mảng male và female. Hãy kiểm tra data/students.json.");
-    }
+    const usingSavedRoster = Boolean(data);
+    if (!data) data = await loadDefaultRoster();
+    state.className = data.className ?? "";
+    elements.classNameInput.value = state.className;
+    document.title = `Danh sách${state.className ? " lớp " + state.className : ""} · Vòng quay màu hồng`;
     const male = data.male.map(normalizeEntry);
     const female = data.female.map(normalizeEntry);
     state.male = male;
     state.female = female;
     state.loaded = true;
-    elements.addMaleBtn.disabled = false;
-    elements.addFemaleBtn.disabled = false;
+    for (const element of [elements.addMaleBtn, elements.addFemaleBtn, elements.classNameInput, elements.restoreRosterBtn]) {
+      element.disabled = false;
+    }
 
     renderTable("male");
     renderTable("female");
     renderJsonPreview();
-    setStatus(`Đã tải ${male.length + female.length} người tham gia. Bạn có thể chỉnh sửa và xuất danh sách.`);
+    setStatus(storageMessage || `Đã mở ${male.length + female.length} bạn từ ${usingSavedRoster ? "danh sách đã lưu trên trình duyệt" : "danh sách gốc"}. Chỉnh sửa rồi áp dụng để bắt đầu quay.`);
   } catch (error) {
     setStatus(`Chưa mở được danh sách. ${error.message}`);
+  }
+}
+
+async function loadDefaultRoster() {
+  const response = await fetch("../data/students.json");
+  if (!response.ok) {
+    throw new Error(`Không tải được danh sách gốc (HTTP ${response.status}). Thử tải lại trang.`);
+  }
+  return validateRoster(await response.json());
+}
+
+function applyRoster() {
+  if (!state.loaded || !renderJsonPreview()) return;
+  try {
+    saveRoster(snapshot());
+    window.location.assign("../");
+  } catch (error) {
+    setStatus(error.message + " Bạn vẫn có thể tải JSON để giữ bản chỉnh sửa.");
+  }
+}
+
+async function restoreDefaultRoster() {
+  if (!state.loaded || !window.confirm("Dùng lại danh sách gốc? Hãy tải JSON trước nếu muốn giữ các chỉnh sửa hiện tại.")) return;
+  try {
+    // Fetch before clearing storage so a network error cannot discard the saved roster.
+    const data = await loadDefaultRoster();
+    clearSavedRoster();
+    state.className = data.className ?? "";
+    state.male = data.male.map(normalizeEntry);
+    state.female = data.female.map(normalizeEntry);
+    elements.classNameInput.value = state.className;
+    renderTable("male");
+    renderTable("female");
+    renderJsonPreview();
+    document.title = `Danh sách${state.className ? " lớp " + state.className : ""} · Vòng quay màu hồng`;
+    setStatus("Đã khôi phục danh sách gốc. Chọn “Áp dụng và mở vòng quay” để bắt đầu.");
+  } catch (error) {
+    setStatus(error.message + " Danh sách hiện tại vẫn được giữ nguyên.");
   }
 }
 
@@ -232,5 +282,8 @@ elements.addMaleBtn.addEventListener("click", () => addRow("male"));
 elements.addFemaleBtn.addEventListener("click", () => addRow("female"));
 elements.copyJsonBtn.addEventListener("click", copyJsonToClipboard);
 elements.downloadJsonBtn.addEventListener("click", downloadJson);
+elements.applyRosterBtn.addEventListener("click", applyRoster);
+elements.restoreRosterBtn.addEventListener("click", restoreDefaultRoster);
+bindInput(elements.classNameInput, (value) => { state.className = value; });
 
 init();
