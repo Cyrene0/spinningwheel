@@ -375,7 +375,7 @@ async function init() {
     const data = await response.json();
     state.allMale = normalizeGroup(data.male, "male");
     state.allFemale = normalizeGroup(data.female, "female");
-    if (!state.allMale.length || !state.allFemale.length) {
+    if (!refillPool(state.allMale).length || !refillPool(state.allFemale).length) {
       throw new Error("Danh sách cần ít nhất một bạn nam và một bạn nữ có tên hợp lệ.");
     }
     state.usedPairs = new Set();
