@@ -1,7 +1,6 @@
 import { CONFIG } from "./config.js";
 import {
   applyTheme,
-  clearStoredThemeBaseColor,
   createWheelPalettes,
   getStoredThemeBaseColor,
   getThemeColor,
@@ -25,8 +24,10 @@ const state = {
   activeFemale: [],
   current: { male: null, female: null },
   spinning: false,
+  loading: true,
   usedPairs: new Set(),
   pairHistory: [],
+  roundSpinCount: 0,
   roundState: null,
   settings: {
     spinDurationMs: CONFIG.settings.defaultSpinDurationMs,
@@ -135,8 +136,9 @@ function setPools(nextMale, nextFemale) {
   state.activeFemale = nextFemale;
 }
 
-function startNewRound(message = "Started a new round.") {
+function startNewRound(message = "Đã bắt đầu lượt ghép cặp mới.") {
   state.usedPairs = new Set();
+  state.roundSpinCount = 0;
   setPools(refillPool(state.allMale), refillPool(state.allFemale));
   state.roundState = null;
   elements.refillStatus.textContent = message;
@@ -166,23 +168,15 @@ function randomFunnyMessage() {
 }
 
 function toggleResultPopup(open) {
-  if (!elements.resultPopup || !elements.resultBackdrop) {
-    return;
-  }
-
-  elements.resultPopup.hidden = !open;
-  elements.resultBackdrop.hidden = !open;
-  elements.resultPopup.setAttribute("aria-hidden", String(!open));
-  document.body.classList.toggle("popup-open", open);
-
-  if (!state.spinning) {
-    elements.spinBtn.disabled = open;
-    elements.resetBtn.disabled = open;
-  }
+  if (open && !elements.resultPopup.open) elements.resultPopup.showModal();
+  if (!open && elements.resultPopup.open) elements.resultPopup.close();
+  renderStatus(elements, state);
+  if (open) elements.resultKeepBtn.focus();
+  else if (!state.spinning && !state.pendingSpin) elements.spinBtn.focus();
 }
 
 function emitParticles() {
-  if (!elements.particleLayer) {
+  if (!elements.particleLayer || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return;
   }
 
@@ -204,6 +198,7 @@ function applyAcceptedSpin(pending) {
   state.usedPairs = pending.picked.usedPairs;
   state.pairHistory = pending.picked.pairHistory;
   state.current = pending.picked.pair;
+  state.roundSpinCount += 1;
 
   if (isEitherPoolBelowThreshold(state)) {
     const nextEnsured = ensurePoolsForSpin(state);
@@ -228,10 +223,10 @@ function showSpinDecisionPopup() {
     elements.resultPopupHint.textContent = "Đã tắt tính năng quay lại trong phần cài đặt.";
     elements.resultRespinBtn.disabled = true;
   } else if (respinUsed) {
-    elements.resultPopupHint.textContent = "Đã sử dụng hết lượt quay lại, phải chịu thui 💞";
+    elements.resultPopupHint.textContent = "Đã dùng lượt quay lại. Nhấn “Giữ cặp này” để xác nhận.";
     elements.resultRespinBtn.disabled = true;
   } else {
-    elements.resultPopupHint.textContent = "Bạn có thể quay lại nếu một trong hai không mong muốn kết quả này 🎲";
+    elements.resultPopupHint.textContent = "Giữ bạn nam, quay lại bạn nữ tối đa một lần. Nhấn Esc để giữ cặp.";
     elements.resultRespinBtn.disabled = false;
   }
 
@@ -240,8 +235,7 @@ function showSpinDecisionPopup() {
 
 async function animatePickedPair(maleEntries, femaleEntries, pickedPair) {
   state.spinning = true;
-  elements.spinBtn.disabled = true;
-  elements.resetBtn.disabled = true;
+  renderStatus(elements, state);
   elements.maleWheelCard?.classList.add("spinning");
   elements.femaleWheelCard?.classList.add("spinning");
 
@@ -265,8 +259,6 @@ async function animatePickedPair(maleEntries, femaleEntries, pickedPair) {
 
   state.current = pickedPair;
   state.spinning = false;
-  elements.spinBtn.disabled = false;
-  elements.resetBtn.disabled = false;
   elements.maleWheelCard?.classList.remove("spinning");
   elements.femaleWheelCard?.classList.remove("spinning");
 }
@@ -279,6 +271,7 @@ function pickFemaleOnlyRespin(beforePending) {
     activeFemale: beforePending.baseFemale,
     usedPairs: state.usedPairs,
     pairHistory: state.pairHistory,
+    roundSpinCount: state.roundSpinCount,
   };
 
   const { pairs } = buildCandidatePairs(replayState);
@@ -308,7 +301,7 @@ function pickFemaleOnlyRespin(beforePending) {
 }
 
 async function spinBoth() {
-  if (state.spinning || state.roundState?.requiresConfirmation || state.pendingSpin) {
+  if (state.loading || state.spinning || state.roundState?.requiresConfirmation || state.pendingSpin) {
     return;
   }
 
@@ -324,10 +317,10 @@ async function spinBoth() {
     updateRoundState(picked.reason);
 
     if (picked.reason === "used_pairs_exhausted") {
-      elements.pairResult.textContent = "All valid pairs used this round.";
-      elements.refillStatus.textContent = "Press Start New Round to continue spinning.";
+      elements.pairResult.textContent = "Các cặp hợp lệ trong lượt này đã được chọn hết.";
+      elements.refillStatus.textContent = "Nhấn “Bắt đầu lượt mới” để tiếp tục.";
     } else {
-      elements.pairResult.textContent = "No compatible exclusiveID pairs available.";
+      elements.pairResult.textContent = "Chưa có cặp phù hợp với quy tắc ghép.";
       elements.refillStatus.textContent = refillMessages.join(" • ");
     }
 
@@ -360,15 +353,14 @@ async function spinBoth() {
 }
 
 function resetPools() {
+  if (state.loading || state.spinning || state.pendingSpin) return;
   state.pendingSpin = null;
   toggleResultPopup(false);
-  startNewRound("Pools reset for a new round.");
+  startNewRound("Đã làm mới vòng quay và xóa lịch sử ghép cặp.");
   state.current = { male: null, female: null };
   state.pairHistory = [];
   maleWheel.rotation = 0;
   femaleWheel.rotation = 0;
-  clearStoredThemeBaseColor();
-  applyAndRenderTheme(CONFIG.theme.defaultBase);
   renderAll();
 }
 
@@ -376,19 +368,25 @@ async function init() {
   try {
     const response = await fetch("./data/students.json");
     if (!response.ok) {
-      throw new Error(`Failed to load student data (${response.status})`);
+      throw new Error(`Không tải được danh sách lớp (mã ${response.status}).`);
     }
 
     const data = await response.json();
     state.allMale = normalizeGroup(data.male, "male");
     state.allFemale = normalizeGroup(data.female, "female");
+    if (!state.allMale.length || !state.allFemale.length) {
+      throw new Error("Danh sách cần ít nhất một bạn nam và một bạn nữ có tên hợp lệ.");
+    }
     state.usedPairs = new Set();
     state.pairHistory = [];
     setPools(refillPool(state.allMale), refillPool(state.allFemale));
+    state.loading = false;
     renderAll();
   } catch (error) {
-    elements.pairResult.textContent = `Error: ${error.message}`;
+    elements.pairResult.textContent = `Không thể bắt đầu. ${error.message}`;
+    elements.spinStatus.textContent = "Kiểm tra data/students.json rồi tải lại trang.";
     elements.spinBtn.disabled = true;
+    elements.resetBtn.disabled = true;
   }
 }
 
@@ -406,6 +404,11 @@ elements.resultKeepBtn?.addEventListener("click", () => {
   renderAll();
 });
 
+elements.resultPopup.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  elements.resultKeepBtn.click();
+});
+
 elements.resultRespinBtn?.addEventListener("click", async () => {
   if (!state.settings.allowRespin || !state.pendingSpin || state.pendingSpin.respinUsed) {
     return;
@@ -413,7 +416,7 @@ elements.resultRespinBtn?.addEventListener("click", async () => {
 
   const before = state.pendingSpin;
   const repicked = pickFemaleOnlyRespin(before);
-  if (!repicked.pair) {
+  if (!repicked?.pair) {
     state.pendingSpin.respinUsed = true;
     showSpinDecisionPopup();
     return;
