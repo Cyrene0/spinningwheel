@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+
+test("blank names are rejected and valid names are trimmed", () => {
+  const entries = normalizeGroup([{ name: "" }, { name: "   " }, { name: " An " }], "male");
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].name, "An");
+});
 import {
   buildCandidatePairs,
   normalizeGroup,

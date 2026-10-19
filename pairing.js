@@ -55,7 +55,7 @@ export function normalizeGroup(list, group) {
 
   return list
     .map((entry, index) => {
-      if (!entry || typeof entry.name !== "string") {
+      if (!entry || typeof entry.name !== "string" || !entry.name.trim()) {
         return null;
       }
 
@@ -70,7 +70,7 @@ export function normalizeGroup(list, group) {
 
       return {
         id,
-        name: entry.name,
+        name: entry.name.trim(),
         excluded: Boolean(entry.excluded),
         priority,
         exclusiveID,
@@ -129,7 +129,7 @@ export function ensurePoolsForSpin(state) {
     } else {
       nextFemale.splice(0, nextFemale.length, ...refillEntries);
     }
-    messages.push(`Refilled ${group} pool with ${refillEntries.length} students`);
+    messages.push(`Đã bổ sung ${refillEntries.length} bạn vào vòng quay ${group === "male" ? "nam" : "nữ"}`);
   }
 
   return { male: nextMale, female: nextFemale, messages };

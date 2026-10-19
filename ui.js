@@ -103,7 +103,8 @@ export function renderStatus(elements, state) {
     : state.spinning ? "Cùng chờ xem hai cái tên được chọn nhé."
     : state.pendingSpin ? "Giữ kết quả hoặc quay lại bạn nữ một lần."
     : requiresConfirmation ? "Bắt đầu lượt mới để tiếp tục ghép cặp."
-    : "Mỗi kết quả được phép quay lại bạn nữ một lần.";
+    : state.settings.allowRespin ? "Mỗi kết quả được phép quay lại bạn nữ một lần."
+    : "Kết quả được xác nhận ngay sau khi quay.";
   elements.newRoundBtn.hidden = !requiresConfirmation;
   const message = getRoundStateMessage(state.roundState);
   if (message) elements.refillStatus.textContent = message;

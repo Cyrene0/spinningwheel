@@ -85,9 +85,7 @@ dialog::backdrop { background: #251b31a6; backdrop-filter: blur(4px); }
 .result-popup-pair { color: var(--theme-dark); font-size: 25px; font-weight: 700; line-height: 1.5; margin: 25px 0; overflow-wrap: anywhere; }
 .result-popup-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .result-popup-hint { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 16px 0 0; }
-.wheel-card.spinning .pointer { animation: pointer-bounce 140ms ease-in-out infinite alternate; }
 .wheel-card.spinning .picked-name { color: var(--theme-dark); }
-@keyframes pointer-bounce { to { transform: translateX(-50%) rotate(-8deg); } }
 .particle-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 30; }
 .particle { position: absolute; top: 52%; width: 8px; height: 8px; border-radius: 2px; animation: pop 1200ms ease-out forwards; }
 @keyframes pop { from { opacity: 1; } to { transform: translate(var(--drift, 0), -190px) rotate(120deg); opacity: 0; } }

@@ -384,7 +384,10 @@ async function init() {
     state.loading = false;
     renderAll();
   } catch (error) {
-    elements.pairResult.textContent = `Không thể bắt đầu. ${error.message}`;
+    const message = error instanceof SyntaxError ? "Tệp danh sách không đúng định dạng JSON."
+      : error instanceof TypeError ? "Không tải được danh sách lớp. Hãy thử tải lại trang."
+      : error.message;
+    elements.pairResult.textContent = `Không thể bắt đầu. ${message}`;
     elements.spinStatus.textContent = "Kiểm tra data/students.json rồi tải lại trang.";
     elements.spinBtn.disabled = true;
     elements.resetBtn.disabled = true;
