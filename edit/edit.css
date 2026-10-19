@@ -1,98 +1,73 @@
 :root {
-  --bg: #fff6fb;
-  --card: #ffffff;
-  --line: #f1c9de;
-  --text: #2f1930;
-  --accent: #e03f95;
+  color-scheme: light;
+  --bg: #fbf9fa;
+  --card: #fff;
+  --line: #e9e1e6;
+  --text: #352c37;
+  --muted: #786b77;
+  --accent: #763455;
+  --pink: #f7edf2;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+button, input, textarea { font: inherit; }
+button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid #ac5e88; outline-offset: 3px; }
+.editor-shell { width: min(1080px, calc(100% - 48px)); margin: 34px auto 28px; display: grid; gap: 20px; }
+.editor-shell > * { min-width: 0; }
+.editor-header { padding: 0 0 8px; }
+.back-link { display: inline-block; margin-bottom: 20px; color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 650; }
+.back-link:hover { text-decoration: underline; }
+h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); line-height: 1.2; letter-spacing: -.045em; font-weight: 650; }
+.intro { color: var(--muted); margin: 12px 0 0; font-size: 15px; }
+.editor-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 14px 24px; align-items: center; padding: 22px 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+.toolbar-title { margin: 0; font-size: 16px; font-weight: 650; }
+.toolbar-note { color: var(--muted); margin: 2px 0 0; font-size: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+button { min-height: 42px; border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 9px; padding: 9px 15px; font-size: 12px; font-weight: 650; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); background: #fcf8fa; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.primary-btn { border-color: var(--accent); background: var(--accent); color: white; }
+.primary-btn:hover:not(:disabled) { background: #622746; color: white; }
+#status { grid-column: 1 / -1; min-height: 20px; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--accent); font-size: 12px; }
+.editor-note { padding: 14px 18px; border-radius: 10px; background: var(--pink); color: #6f4b61; font-size: 12px; }
+.editor-note strong { font-weight: 700; }
+code { font-size: .95em; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 21px 24px; }
+h2 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.02em; }
+.count { display: inline-flex; align-items: center; justify-content: center; min-width: 29px; height: 25px; margin-left: 7px; border-radius: 7px; background: var(--pink); color: var(--accent); font-size: 11px; vertical-align: middle; }
+.add-btn { color: var(--accent); background: #fcf8fa; }
+.table-wrap { overflow-x: auto; padding: 0 16px 12px; }
+table { width: 100%; border-collapse: collapse; min-width: 540px; table-layout: fixed; }
+th, td { border-bottom: 1px solid #f0ebee; padding: 9px 8px; text-align: left; }
+th { color: var(--muted); font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .07em; }
+th:first-child { width: 44%; }
+th:nth-child(2), th:nth-child(3) { width: 21%; }
+th:last-child { width: 14%; }
+tbody tr:last-child td { border-bottom: 0; }
+input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; color: var(--text); background: white; font-size: 13px; }
+input:hover { border-color: #c9b5c3; }
+input::placeholder { color: #8b7f89; font-size: 11px; }
+input[aria-invalid="true"] { border-color: #b7355c; background: #fff9fa; }
+.remove-btn { color: #934164; border-color: transparent; background: transparent; min-width: 44px; padding: 8px; }
+.empty-cell { padding: 26px 12px; text-align: center; color: var(--muted); }
+.field-help { color: var(--muted); font-size: 12px; margin: -4px 8px 0; }
+.file-badge { color: var(--muted); padding: 5px 9px; border-radius: 6px; background: #f6f3f5; font-family: ui-monospace, monospace; font-size: 11px; }
+textarea { display: block; width: calc(100% - 48px); margin: 0 24px 24px; resize: vertical; min-height: 200px; border: 1px solid var(--line); border-radius: 9px; padding: 16px; background: #fcfafb; color: #725166; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.7; tab-size: 2; }
+footer { padding-top: 7px; color: var(--muted); text-align: center; font-size: 11px; }
+footer span { padding: 0 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-body {
-  margin: 0;
-  font-family: Inter, system-ui, -apple-system, sans-serif;
-  background: radial-gradient(circle at top, #ffe0ef, var(--bg));
-  color: var(--text);
-}
-
-.editor-shell {
-  width: min(1100px, 94vw);
-  margin: 24px auto 40px;
-  display: grid;
-  gap: 16px;
-}
-
-.editor-header h1,
-.card h2 {
-  margin: 0 0 8px;
-}
-
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-button {
-  border: 1px solid var(--line);
-  background: #fff;
-  color: var(--text);
-  border-radius: 10px;
-  padding: 9px 12px;
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: var(--accent);
-}
-
-.table-wrap {
-  overflow: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 680px;
-}
-
-th,
-td {
-  border-bottom: 1px solid var(--line);
-  padding: 8px;
-  text-align: left;
-}
-
-input {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 7px 9px;
-}
-
-.remove-btn {
-  color: #8a164f;
-}
-
-textarea {
-  width: 100%;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px;
-}
-
-#status {
-  min-height: 20px;
-  color: #6d2553;
-  margin: 8px 0 0;
+@media (max-width: 640px) {
+  .editor-shell { width: calc(100% - 28px); margin-top: 24px; gap: 16px; }
+  .editor-toolbar { grid-template-columns: 1fr; padding: 18px; gap: 14px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .actions button { padding: 10px; }
+  .section-heading { padding: 18px; }
+  .table-wrap { padding-right: 10px; padding-left: 10px; }
+  textarea { width: calc(100% - 36px); margin: 0 18px 18px; }
+  .editor-note { padding: 14px; }
+  footer { font-size: 10px; }
 }
