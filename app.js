@@ -22,6 +22,7 @@ const state = {
   allFemale: [],
   activeMale: [],
   activeFemale: [],
+  displayEntries: null,
   current: { male: null, female: null },
   spinning: false,
   loading: true,
@@ -97,8 +98,8 @@ const ui = createUiController(elements, {
 });
 
 function drawWheels() {
-  maleWheel.draw(state.activeMale);
-  femaleWheel.draw(state.activeFemale);
+  maleWheel.draw(state.displayEntries?.male ?? state.activeMale);
+  femaleWheel.draw(state.displayEntries?.female ?? state.activeFemale);
 }
 
 function renderAll() {
@@ -140,6 +141,10 @@ function setPools(nextMale, nextFemale) {
 function startNewRound(message = "Đã bắt đầu lượt ghép cặp mới.") {
   state.usedPairs = new Set();
   state.roundSpinCount = 0;
+  state.displayEntries = null;
+  state.current = { male: null, female: null };
+  maleWheel.rotation = 0;
+  femaleWheel.rotation = 0;
   setPools(refillPool(state.allMale), refillPool(state.allFemale));
   state.roundState = null;
   elements.refillStatus.textContent = message;
@@ -234,13 +239,13 @@ function showSpinDecisionPopup() {
   toggleResultPopup(true);
 }
 
-async function animatePickedPair(maleEntries, femaleEntries, pickedPair) {
+async function animatePickedPair(maleEntries, femaleEntries, pickedPair, femaleOnly = false) {
   state.spinning = true;
+  state.displayEntries = { male: maleEntries, female: femaleEntries };
   renderStatus(elements, state);
-  elements.maleWheelCard?.classList.add("spinning");
+  if (!femaleOnly) elements.maleWheelCard?.classList.add("spinning");
   elements.femaleWheelCard?.classList.add("spinning");
 
-  const maleFinal = wheelRotationForWinner(maleEntries, pickedPair.male.id, maleWheel.rotation);
   const femaleFinal = wheelRotationForWinner(femaleEntries, pickedPair.female.id, femaleWheel.rotation);
 
   const maleDuration = state.settings.spinDurationMs;
@@ -250,7 +255,7 @@ async function animatePickedPair(maleEntries, femaleEntries, pickedPair) {
   );
 
   await Promise.all([
-    maleWheel.animateTo(maleFinal, maleEntries, maleDuration, {
+    !femaleOnly && maleWheel.animateTo(wheelRotationForWinner(maleEntries, pickedPair.male.id, maleWheel.rotation), maleEntries, maleDuration, {
       onTick: (entry) => updateLiveSpinLabel(elements.maleName, entry),
     }),
     femaleWheel.animateTo(femaleFinal, femaleEntries, femaleDuration, {
@@ -308,6 +313,7 @@ async function spinBoth() {
 
   const ensured = ensurePoolsForSpin(state);
   setPools(ensured.male, ensured.female);
+  state.displayEntries = null;
   const refillMessages = [...ensured.messages];
 
   const maleEntries = [...state.activeMale];
@@ -358,10 +364,7 @@ function resetPools() {
   state.pendingSpin = null;
   toggleResultPopup(false);
   startNewRound("Đã làm mới vòng quay và xóa lịch sử ghép cặp.");
-  state.current = { male: null, female: null };
   state.pairHistory = [];
-  maleWheel.rotation = 0;
-  femaleWheel.rotation = 0;
   renderAll();
 }
 
@@ -430,7 +433,7 @@ elements.resultRespinBtn?.addEventListener("click", async () => {
   state.current = { male: repicked.pair.male, female: null };
   updateLiveSpinLabel(elements.maleName, repicked.pair.male);
   updateLiveSpinLabel(elements.femaleName, null);
-  await animatePickedPair([repicked.pair.male], before.baseFemale, repicked.pair);
+  await animatePickedPair(before.baseMale, before.baseFemale, repicked.pair, true);
 
   state.pendingSpin = {
     ...before,
