@@ -16,14 +16,15 @@
 
       <section class="editor-toolbar" aria-label="Thao tác danh sách">
         <div class="actions">
+          <button id="save-roster" class="primary-btn" type="button" disabled>Lưu</button>
           <button id="copy-json" type="button" disabled>Sao chép JSON</button>
-          <button id="download-json" class="primary-btn" type="button" disabled>Tải JSON</button>
+          <button id="download-json" type="button" disabled>Tải JSON</button>
         </div>
         <p id="status" role="status" aria-live="polite">Đang tải danh sách…</p>
       </section>
 
       <aside class="editor-note" aria-label="Hướng dẫn lưu danh sách">
-        Vòng quay dùng file <code>data/students.json</code> trên GitHub. Sửa xong, tải JSON rồi thay file đó trong dự án.
+        Sửa xong, chọn <strong>Lưu</strong> và nhập mật khẩu.
       </aside>
 
       <section class="roster-options" aria-label="Thông tin lớp">
@@ -85,6 +86,19 @@
         <textarea id="json-preview" rows="12" readonly spellcheck="false"></textarea>
       </section>
     </main>
+
+    <dialog id="save-dialog" aria-labelledby="save-heading" aria-describedby="save-error">
+      <form id="save-form" method="dialog">
+        <h2 id="save-heading">Lưu danh sách</h2>
+        <label for="save-password">Mật khẩu</label>
+        <input id="save-password" name="password" type="password" autocomplete="current-password" required autofocus />
+        <p id="save-error" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button id="cancel-save" type="button">Hủy</button>
+          <button id="confirm-save" class="primary-btn" type="submit">Lưu</button>
+        </div>
+      </form>
+    </dialog>
 
     <script type="module" src="./edit.js"></script>
   </body>
