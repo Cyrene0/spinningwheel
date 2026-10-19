@@ -15,7 +15,15 @@ function pairKey(maleId, femaleId) {
 }
 
 function spinOrder(state) {
-  return state.pairHistory.length + 1;
+  return (state.roundSpinCount ?? state.pairHistory.length) + 1;
+}
+
+function optionalNumber(value) {
+  if ((typeof value !== "number" && typeof value !== "string") || String(value).trim() === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function randomPriority(usedPriorities) {
@@ -41,8 +49,9 @@ export function normalizeGroup(list, group) {
   }
 
   const usedPriorities = new Set(
-    list.map((entry) => Number(entry?.priority)).filter((priority) => Number.isFinite(priority)),
+    list.map((entry) => optionalNumber(entry?.priority)).filter((priority) => priority != null),
   );
+  const usedIds = new Set();
 
   return list
     .map((entry, index) => {
@@ -51,9 +60,13 @@ export function normalizeGroup(list, group) {
       }
 
       const sourceId = entry.id ?? entry.sourceId ?? entry.sourceID;
-      const id = sourceId != null && String(sourceId).trim() !== "" ? String(sourceId) : `${group}:${index}`;
-      const priority = Number.isFinite(Number(entry.priority)) ? Number(entry.priority) : randomPriority(usedPriorities);
-      const exclusiveID = Number.isFinite(Number(entry.exclusiveID)) ? Number(entry.exclusiveID) : null;
+      let id = sourceId != null && String(sourceId).trim() !== "" ? String(sourceId) : `${group}:${index}`;
+      while (usedIds.has(id)) {
+        id = `${id}:${index}`;
+      }
+      usedIds.add(id);
+      const priority = optionalNumber(entry.priority) ?? randomPriority(usedPriorities);
+      const exclusiveID = optionalNumber(entry.exclusiveID);
 
       return {
         id,
