@@ -39,10 +39,10 @@ const state = {
 };
 
 const FUNNY_SPIN_MESSAGES = [
-  "✨ Đang kiểm tra độ hợp nhau... thuật toán tình yêu đang chạy.",
-  "😭 Nếu ghép đôi này hơi ngại, bạn được quay lại 1 lần để cứu tình thế.",
-  "🎉 Định mệnh đã chọn rồi. Nhưng bạn vẫn có 1 lần xin quay lại.",
-  "🫶 Cặp đôi dễ thương đã xuất hiện! Muốn quay lại không? Bạn có 1 lần thôi nhé.",
+  "✨ Một món quà nhỏ, một niềm vui thật to.",
+  "🎉 Hai cái tên đã được chọn. Cùng chuẩn bị món quà nhé!",
+  "🫶 Thêm một cặp bạn, thêm một kỷ niệm ngày 8/3.",
+  "🎁 Đến lượt trao gửi một lời chúc thật dễ thương.",
 ];
 
 const elements = createElements();
