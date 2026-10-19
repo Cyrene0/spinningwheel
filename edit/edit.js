@@ -39,6 +39,7 @@ function normalizeEntry(entry) {
   }
 
   return {
+    ...entry,
     name: String(entry?.name ?? ""),
     priority: toOptionalNumber(entry?.priority),
     exclusiveID: toOptionalNumber(entry?.exclusiveID),
@@ -46,17 +47,7 @@ function normalizeEntry(entry) {
 }
 
 function compactEntry(entry) {
-  const compacted = { name: entry.name.trim() };
-
-  if (typeof entry.priority === "number") {
-    compacted.priority = entry.priority;
-  }
-
-  if (typeof entry.exclusiveID === "number") {
-    compacted.exclusiveID = entry.exclusiveID;
-  }
-
-  return compacted;
+  return { ...entry, name: entry.name.trim() };
 }
 
 function snapshot() {
