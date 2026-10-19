@@ -1,35 +1,8 @@
 import { CONFIG } from "./config.js";
 
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function shortName(name, entryCount) {
+function shortName(name) {
   const tokens = String(name).trim().split(/\s+/).filter(Boolean);
-  if (tokens.length <= 1) {
-    return name;
-  }
-
-  const givenName = tokens[tokens.length - 1];
-
-  if (entryCount <= 12) {
-    return name;
-  }
-
-  if (entryCount <= 18) {
-    return `${tokens[0]} ${givenName}`;
-  }
-
-  if (entryCount <= 26) {
-    return givenName;
-  }
-
-  const initials = tokens
-    .slice(0, -1)
-    .map((token) => token[0]?.toUpperCase())
-    .filter(Boolean)
-    .join(".");
-  return initials ? `${initials}. ${givenName}` : givenName;
+  return tokens.slice(-2).join(" ");
 }
 
 export class Wheel {
@@ -44,9 +17,9 @@ export class Wheel {
   }
 
   cacheKey(entries, skipLabels, palette, colors, fontSize) {
-    const ids = entries.map((entry) => entry.id).join("|");
+    const labels = JSON.stringify(entries.map((entry) => [entry.id, entry.name]));
     return [
-      ids,
+      labels,
       entries.length,
       skipLabels ? "1" : "0",
       fontSize,
@@ -93,18 +66,22 @@ export class Wheel {
 
       if (entries.length && !skipLabels) {
         const mid = start + angleStep / 2;
-        const labelRadius = entries.length > 20 ? radius * 0.73 : radius * 0.67;
+        const labelRadius = radius - 28;
         const x = center + Math.cos(mid) * labelRadius;
         const y = center + Math.sin(mid) * labelRadius;
+        const flipped = Math.cos(mid) < 0;
 
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(mid + Math.PI / 2);
+        ctx.rotate(mid + (flipped ? Math.PI : 0));
         ctx.fillStyle = colors.text;
         ctx.font = `bold ${fontSize}px Segoe UI, sans-serif`;
-        ctx.textAlign = "center";
-        const maxLabelWidth = this.getMaxLabelWidth(radius, angleStep);
-        const compact = shortName(entries[i].name, entries.length);
+        ctx.textAlign = flipped ? "left" : "right";
+        ctx.textBaseline = "middle";
+        const maxLabelWidth = this.getMaxLabelWidth(radius, angleStep, fontSize);
+        const compact = ctx.measureText(entries[i].name).width <= maxLabelWidth
+          ? entries[i].name
+          : shortName(entries[i].name);
         const safeLabel = this.truncateLabelToWidth(compact, ctx, maxLabelWidth);
         ctx.fillText(safeLabel, 0, 0);
         ctx.restore();
@@ -170,18 +147,18 @@ export class Wheel {
   }
 
   getLabelFontSize(entryCount) {
-    if (entryCount <= 8) return 15;
-    if (entryCount <= 12) return 13;
-    if (entryCount <= 16) return 12;
-    if (entryCount <= 22) return 10;
-    if (entryCount <= 30) return 9;
-    return 8;
+    const scale = this.canvas.width / 440;
+    if (entryCount <= 12) return 20 * scale;
+    if (entryCount <= 18) return 18 * scale;
+    if (entryCount <= 26) return 17 * scale;
+    if (entryCount <= 36) return 15 * scale;
+    return Math.max(8, 540 / entryCount) * scale;
   }
 
-  getMaxLabelWidth(radius, angleStep) {
-    const labelRadius = radius * 0.67;
-    const arcChordWidth = 2 * labelRadius * Math.sin(angleStep / 2);
-    return clamp(arcChordWidth * 0.9, 36, radius * 0.68);
+  getMaxLabelWidth(radius, angleStep, fontSize) {
+    // Keep each radial label outside the narrow center of its wedge.
+    const innerRadius = Math.max(30, fontSize * 0.55 / Math.sin(Math.min(angleStep, Math.PI) / 2) + 4);
+    return Math.max(0, radius - 28 - innerRadius);
   }
 
   truncateLabelToWidth(label, ctx, maxWidth) {
@@ -217,10 +194,19 @@ export class Wheel {
   }
 
   animateTo(finalRotation, entries, durationMs = CONFIG.settings.defaultSpinDurationMs, hooks = {}) {
+    const { onTick } = hooks;
+    if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches || durationMs <= 0) {
+      this.rotation = finalRotation % CONFIG.geometry.TWO_PI;
+      this.draw(entries);
+      if (typeof onTick === "function") {
+        onTick(this.getEntryAtPointer(entries), 1);
+      }
+      return Promise.resolve();
+    }
+
     const start = this.rotation;
     const startTime = performance.now();
     let lastDrawnAt = 0;
-    const { onTick } = hooks;
 
     return new Promise((resolve) => {
       const frame = (now) => {
