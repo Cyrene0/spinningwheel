@@ -64,7 +64,9 @@
       "name": "Nguyễn Đức Quang"
     },
     {
-      "name": "Phạm Quốc Bảo"
+      "name": "Phạm Quốc Bảo",
+      "priority": 16,
+      "exclusiveID": 23
     },
     {
       "name": "Chu Bảo Nam"
@@ -135,7 +137,9 @@
       "name": "Bùi Minh Ngọc"
     },
     {
-      "name": "Lưu Minh Ngọc"
+      "name": "Lưu Minh Ngọc",
+      "priority": 16,
+      "exclusiveID": 59
     },
     {
       "name": "Đỗ Thúy Nguyên"
