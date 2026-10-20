@@ -53,7 +53,9 @@
       "name": "Nguyễn Tiến Nguyên"
     },
     {
-      "name": "Nguyễn Đức Tâm"
+      "name": "Nguyễn Đức Tâm",
+      "priority": 24,
+      "exclusiveID": 1
     },
     {
       "name": "Vũ Khánh Thiện"
@@ -142,7 +144,9 @@
       "name": "Tô Yến Nhi"
     },
     {
-      "name": "Nguyễn Thái Bảo Quyên"
+      "name": "Nguyễn Thái Bảo Quyên",
+      "priority": 24,
+      "exclusiveID": 1
     },
     {
       "name": "Vũ Hoàng Quyên"
